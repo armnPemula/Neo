@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - NeoC2{% endblock %}
+
+{% block content %}
+<div class="text-center">
+    <div class="card mx-auto" style="max-width: 600px;">
+        <div class="card-header">
+            <h3><i class="fas fa-tachometer-alt"></i> Dashboard</h3>
+        </div>
+        <div class="card-body">
+            <h4><i class="fas fa-user"></i> Welcome, {{ current_user.username }}!</h4>
+            <p class="lead">Your role: <span class="badge bg-primary">{{ current_user.role_name }}</span></p>
+            
+            <div class="alert alert-info mt-3">
+                <i class="fas fa-info-circle"></i>
+                <strong>Web Interface Information</strong>
+                <p class="mb-0 mt-2">The web interface is reserved for user management for administrators only.</p>
+                <p class="mb-0">Please use the CLI interface for all C2 operations.</p>
+            </div>
+            
+            <div class="mt-4">
+                <h5>CLI Connection Information</h5>
+                <div class="alert alert-light">
+                    <p><strong>To connect via CLI:</strong></p>
+                    <code>./neoc2-cli --server &lt;server_ip&gt;:&lt;port&gt; --username {{ current_user.username }}</code>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+</content>

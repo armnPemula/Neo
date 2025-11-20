@@ -1,0 +1,13 @@
+__pycache__
+*.pyc
+*.log
+*.crt
+*.key
+*.out
+*.db
+*.db-shm
+*.db-wal
+*venv
+*.toml
+loot/
+logs/

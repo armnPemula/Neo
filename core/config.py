@@ -1,0 +1,124 @@
+import os
+import json
+import argparse
+from pathlib import Path
+
+class NeoC2Config:
+    def __init__(self, config_file=None):
+        self.config_file = config_file or "config.json"
+        self.default_config = {
+            "server": {
+                "host": os.environ.get('IP', '0.0.0.0'),  # Use IP environment variable or default
+                "port": 443,
+                "ssl_cert": "server.crt",
+                "ssl_key": "server.key"
+            },
+            "database": {
+                "path": "neoc2.db"
+            },
+            "agents": {
+                "default_checkin": 30,
+                "default_jitter": 5,
+                "max_inactive_time": 300
+            },
+            "web": {
+                "enabled": True,
+                "port": int(os.environ.get('MULTI', 7443)),  # Use MULTI env var for web interface port, default to 7443
+                "host": os.environ.get('IP', '0.0.0.0'),  # Use IP environment variable or default
+                "secret_key": "change_me_in_production"
+            },
+            "cli": {
+                "history_file": "~/.neoc2_history",
+                "max_history": 1000
+            },
+            "remote_cli": {
+                "enabled": True,
+                "host": os.environ.get('IP', '0.0.0.0'),  # Use IP environment variable or default
+                "port": 8444,
+                "ssl_enabled": True,
+                "cert_file": "server.crt",
+                "key_file": "server.key"
+            }
+        }
+        
+        self.config = self.load_config()
+    
+    def load_config(self):
+        if os.path.exists(self.config_file):
+            try:
+                with open(self.config_file, "r") as f:
+                    config = json.load(f)
+                    return self.merge_configs(self.default_config, config)
+            except json.JSONDecodeError:
+                print(f"Error parsing config file {self.config_file}, using defaults")
+                return self.default_config
+        else:
+            with open(self.config_file, "w") as f:
+                json.dump(self.default_config, f, indent=4)
+            return self.default_config
+    
+    def merge_configs(self, default, user):
+        result = default.copy()
+        for key, value in user.items():
+            if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+                result[key] = self.merge_configs(result[key], value)
+            else:
+                result[key] = value
+        return result
+    
+    def save_config(self):
+        with open(self.config_file, "w") as f:
+            json.dump(self.config, f, indent=4)
+    
+    def get(self, key, default=None):
+        keys = key.split('.')
+        value = self.config
+        
+        for k in keys:
+            if isinstance(value, dict) and k in value:
+                value = value[k]
+            else:
+                return default
+        
+        return value
+    
+    def set(self, key, value):
+        keys = key.split('.')
+        config = self.config
+        
+        for k in keys[:-1]:
+            if k not in config:
+                config[k] = {}
+            config = config[k]
+        
+        config[keys[-1]] = value
+        self.save_config()
+    
+    
+    def parse_args(self):
+        parser = argparse.ArgumentParser(description="NeoC2 Framework")
+        parser.add_argument("--host", help="Server host to bind to")
+        parser.add_argument("--port", type=int, help="Server port to bind to")
+        parser.add_argument("--ssl-cert", help="Path to SSL certificate file")
+        parser.add_argument("--ssl-key", help="Path to SSL private key file")
+        parser.add_argument("--db-path", help="Path to database file")
+        parser.add_argument("--web-only", action="store_true", help="Run only web interface")
+        parser.add_argument("--cli-only", action="store_true", help="Run only CLI interface")
+        parser.add_argument("--profile", help="Configuration profile to use")
+        
+        args = parser.parse_args()
+        
+        if args.host:
+            self.set("server.host", args.host)
+        if args.port:
+            self.set("server.port", args.port)
+        if args.ssl_cert:
+            self.set("server.ssl_cert", args.ssl_cert)
+        if args.ssl_key:
+            self.set("server.ssl_key", args.ssl_key)
+        if args.db_path:
+            self.set("database.path", args.db_path)
+        if args.profile:
+            print("Warning: Profiles feature has been removed from config")
+        
+        return args

@@ -1,0 +1,39 @@
+{% extends "base-unauth.html" %}
+{% block title %}System Access{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-header">
+        <i class="fas fa-shield-alt"></i>
+        <h2 class="mt-3">User Management Interface</h2>
+    </div>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('auth.login') }}">
+        <div class="mb-3">
+            <label for="username" class="form-label">Authorized ID</label>
+            <input type="text" class="form-control" id="username" name="username" required>
+        </div>
+        <div class="mb-3">
+            <label for="password" class="form-label">Passcode</label>
+            <input type="password" class="form-control" id="password" name="password" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100 mt-3">Authenticate</button>
+    </form>
+
+    <div class="auth-notice mt-4">
+        <p class="mb-0">This system is restricted to authorized users only. All activities are logged and monitored.</p>
+        <p class="mb-0 mt-2"><a href="{{ url_for('registration.register') }}">Don't have an account? Register here</a></p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+#!/bin/bash
+
+# NeoC2 Remote CLI Command Launcher
+
+find_neoc2_installation() {
+    local possible_paths=(
+        "/opt/neoc2"
+        "$HOME/neoc2"
+        "$(pwd)"
+    )
+    
+    local current_dir="$(pwd)"
+    for i in {1..5}; do
+        possible_paths+=("$current_dir")
+        current_dir="$(dirname "$current_dir")"
+        [[ "$current_dir" == "/" ]] && break
+    done
+    
+    for path in "${possible_paths[@]}"; do
+        if [[ -d "$path" && -f "$path/cli/remote_cli.py" && -d "$path/.venv" ]]; then
+            echo "$path"
+            return 0
+        fi
+    done
+    
+    return 1
+}
+
+NEOC2_PATH=$(find_neoc2_installation)
+
+if [[ -z "$NEOC2_PATH" ]]; then
+    echo "Error: Could not find NeoC2 installation."
+    echo "Expected to find cli/remote_cli.py and .venv directory in the installation path."
+    exit 1
+fi
+
+echo "Found NeoC2 installation at: $NEOC2_PATH"
+
+# Change to NeoC2 directory
+cd "$NEOC2_PATH" || exit 1
+
+VENV_PATH="$NEOC2_PATH/.venv"
+if [[ -f "$VENV_PATH/bin/activate" ]]; then
+    source "$VENV_PATH/bin/activate"
+else
+    echo "Error: Virtual environment not found at $VENV_PATH"
+    exit 1
+fi
+
+# Check if Python remote CLI exists
+if [[ ! -f "./cli/remote_cli.py" ]]; then
+    echo "Error: cli/remote_cli.py not found in $NEOC2_PATH"
+    exit 1
+fi
+
+python3 ./cli/remote_cli.py "$@"

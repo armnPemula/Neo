@@ -1,0 +1,28 @@
+{% extends "base-unauth.html" %}
+
+{% block title %}{{ error_code }} - {{ error_message }}{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-header text-center">
+        <h1 class="display-1 text-danger">{{ error_code }}</h1>
+        <h2>{{ error_message }}</h2>
+        <p class="lead">{{ error_details }}</p>
+    </div>
+    
+    <div class="text-center mt-4">
+        {% if current_user.role_name == 'admin' %}
+        <a href="{{ url_for('user_management.user_management') }}" class="btn btn-primary">Return to Dashboard</a>
+        {% endif %}
+        <a href="{{ url_for('auth.logout') }}" class="btn btn-secondary ms-2">Logout</a>
+    </div>
+    
+    {% if current_user.is_authenticated %}
+    <div class="alert alert-info mt-4">
+        <h5>Current User Information:</h5>
+        <p><strong>Username:</strong> {{ current_user.username }}</p>
+        <p><strong>Role:</strong> {{ current_user.role_name if hasattr(current_user, 'role_name') else 'viewer' }}</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

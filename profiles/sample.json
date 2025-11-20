@@ -1,0 +1,40 @@
+{
+  "name": "my_https_profile",
+  "description": "Custom HTTPS communication profile",
+  "config": {
+    "endpoints": {
+      "download": "/api/assets/main.js",
+      "register": "/api/users/register",
+      "results": "/api/users/{agent_id}/activity",
+      "tasks": "/api/users/{agent_id}/profile",
+      "interactive": "/api/users/{agent_id}/settings",
+      "interactive_status": "/api/users/{agent_id}/status"
+    },
+    "headers": {
+      "Accept": "application/json",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    },
+    "heartbeat_interval": 60,
+    "http_get": {
+      "headers": {
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+      },
+      "uri": "/api/v1/info"
+    },
+    "http_post": {
+      "headers": {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+      },
+      "uri": "/api/v1/submit"
+    },
+    "jitter": 0.2,
+    "protocol": "https",
+    "sleep_time": 60,
+    "p2p_enabled": false,
+    "p2p_port": 8888
+  }
+}

