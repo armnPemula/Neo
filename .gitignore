@@ -1,8 +1,11 @@
 __pycache__
+build
+dist
 *.pyc
 *.log
 *.crt
 *.key
+*.spec
 *.out
 *.db
 *.db-shm
