@@ -127,7 +127,7 @@ def handle_interactive_stager_command(command_parts: list, session: object) -> t
     if len(command_parts) < 2:
         help_text = """
 **Actions:**
-  `generate`   - Generate a stager payload.
+  `generate`   - Generate a stager payload (autosaves to logs directory).
   `list`       - List available stager types.
 
 **Options for droppers:**
