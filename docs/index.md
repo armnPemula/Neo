@@ -33,12 +33,12 @@ Guides covering advanced functionality and setups.
 *   [**Multiplayer**](multiplayer.md): Collaboration and shared usage.
 *   [**P2P Readme**](p2preadme.md): Information on peer-to-peer functionality.
 *   [**Task Orchestration**](taskorchestration.md): Managing and automating tasks.
+*   [**Reporting**](reporting.md): Learn about generating and viewing reports.
 
 ---
 
 ## Project Information
 
-*   [**Reporting**](reporting.md): Learn about generating and viewing reports.
 *   [**Roadmap**](roadmap.md): See what's coming next for the project.
 
 ---
