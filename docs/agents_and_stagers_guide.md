@@ -66,7 +66,7 @@ Phantom Hawk is an EXPERIMENTAL Python variant. Not intended to be deployed in r
 ### Limitations
 - Larger payload size due to comprehensive feature set
 - Network communication may be detected by advanced network monitoring
-- May be flagged by advanced Python-based threat detection tools
+- May be flagged by advanced threat detection tools
 
 ### Usage
 ```
