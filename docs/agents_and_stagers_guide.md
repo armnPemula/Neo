@@ -102,6 +102,17 @@ NeoC2 > kill
 stager generate linux_binary host=<c2_host> port=<c2_port> [protocol=https] [download_uri=/api/assets/main.js]
 ```
 
+#### Powershell Dropper
+- **Windows compatibility**
+- **Downloads agent** from `/api/assets/main.js` endpoint and deryptes using embedded secret key
+- **Self-executes** the downloaded agent 
+- **Self-deletes** after execution
+- **Binary payload support**: Can only execute windows .exe binary files
+### Usage
+```
+stager generate windows_exe host=<c2_host> port=<c2_port> [protocol=https] [download_uri=/api/assets/main.js]
+```
+
 ---
 
 ## Payload Upload Feature
