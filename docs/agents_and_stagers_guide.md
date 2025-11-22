@@ -91,8 +91,8 @@ NeoC2 > kill
 
 ### Supported Types
 
-#### Bash Dropper (nohup)
-- **Linux/macOS compatibility**
+#### Bash Dropper
+- **Linux compatibility**
 - **Downloads agent** from `/api/assets/main.js` endpoint and deryptes using embedded secret key
 - **Self-executes** the downloaded agent 
 - **Self-deletes** after execution
@@ -107,7 +107,7 @@ stager generate linux_binary host=<c2_host> port=<c2_port> [protocol=https] [dow
 ## Payload Upload Feature
 
 ### Description
-NeoC2 supports uploading custom payloads directly through the `payload_upload` base-command of the remote client, allowing operators to deploy binary executables like .exe, .dll, or other file types in addition to Python scripts.
+NeoC2 supports uploading custom payloads directly through the `payload_upload` base-command of the remote client server, allowing operators to deploy binary executables like .exe, .dll, or other file types in addition to Python scripts.
 
 ### Capabilities
 - **Multi-Format Support**: Upload EXE, DLL, PY, JS, VBS, BAT, PS1, and other binary/script files
