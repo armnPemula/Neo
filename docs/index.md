@@ -12,12 +12,6 @@ A modular architecture post-exploitation framework built for collaborative agent
 
 *   [**General Usage Guide**](GENERAL%20USAGE%20GUIDE.md): Overview of the platform's features and basic usage instructions. 
 
----
-
-## Detailed Guides
-
-Explore specific usage guide below:
-
 ### Agents & Stagers
 Manage agents and stagers within your environment.
 
