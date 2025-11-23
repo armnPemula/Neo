@@ -169,7 +169,12 @@ NeoC2 > interact <agent-id>
 - Remote CLI: 8444
 
 ## Documentation 
-Please [READ DOCUMENTATIONS](https://neoc2.readthedocs.io/en/latest/) for Usage guides 
+Please [https://neoc2.readthedocs.io/en/latest/](https://neoc2.readthedocs.io/en/latest/) for Usage guides 
+
+Blog PART 1: Learning: Neo Command & Control Framework (Part 1) Tutorial & Usage guide [https://medium.com/@stillbigjosh/learning-neo-command-control-framework-part-1-912ac0b68f2b](https://medium.com/@stillbigjosh/learning-neo-command-control-framework-part-1-912ac0b68f2b)
+
+Blog PART 2: Learning: Neo Command & Control Framework (Part 2) Tutorial & Usage guide [https://stillbigjosh.medium.com/learning-neo-command-control-framework-part-2-tutorial-usage-guide-f2891b44a96d](https://stillbigjosh.medium.com/learning-neo-command-control-framework-part-2-tutorial-usage-guide-f2891b44a96d)
+
 
 ### Contributions
 This project is accepting contributions and under active development. You can reach out to @stillbigjosh 
