@@ -19,7 +19,8 @@ The Go Agent is an exe compiled, multi-functional agent with features like file 
 - **Command Execution**: Execute arbitrary shell commands on the target system
 - **File Transfer**: Upload and download files using base64 encoding
 - **Interactive Mode**: Enter real-time interactive session with the target
-- **TTY Shell Enabled**: Enter a full TTY Shell 
+- **TTY Shell Enabled**: Enter a full TTY Shell
+- **Polymorphic Obfuscation**: Randomized variable and function names to evade static analysis
 - **Jitter & Sleep Obfuscation**: Configurable sleep intervals with jitter during agent generation and in deployment
 - **Cross-Platform**: Works on Windows, Linux, and macOS 
 - **Module Execution Capability**: Runs extensible modules from C2
