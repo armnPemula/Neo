@@ -1,11 +1,12 @@
 
+# Roadmap
 
-# Actively Under development
+## Actively Under development
 1. Advanced P2P Agent cocomm
 2. Agent-register alerting system via the multiplayer agent manager to the remote_cli.py
 3. Polymorphic go_agent generator
 
-# To be implemented
+## To be implemented
 1. Configurable killdate/workingtime 
 2. Reduce Agent ID / Task ID length to 8 characters
 3. In-memory COFF/BOF Loader
