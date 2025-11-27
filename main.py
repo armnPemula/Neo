@@ -454,7 +454,7 @@ class NeoC2Framework:
         
             hybrid_config = {
                 "protocol": "https",
-            
+
                 "http_get": {
                     "uri": config.get('http_get', {}).get('uri', '/api/v1/info'),
                     "headers": config.get('http_get', {}).get('headers', {
@@ -463,7 +463,7 @@ class NeoC2Framework:
                         "Accept-Language": "en-US,en;q=0.9"
                     })
                 },
-            
+
                 "http_post": {
                     "uri": config.get('http_post', {}).get('uri', '/api/v1/submit'),
                     "headers": config.get('http_post', {}).get('headers', {
@@ -472,10 +472,10 @@ class NeoC2Framework:
                         "Accept": "application/json"
                     })
                 },
-            
+
                 "sleep_time": config.get('sleep_time', 60),
                 "jitter": config.get('jitter', 10),
-            
+
                 "endpoints": {
                     "register": "/api/users/register",
                     "tasks": "/api/users/{agent_id}/profile",
@@ -484,15 +484,26 @@ class NeoC2Framework:
                     "interactive": "/api/users/{agent_id}/settings",
                     "interactive_status": "/api/users/{agent_id}/status"
                 },
-            
+
                 # For PayloadGenerator - Agent headers
                 "headers": {
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                     "Accept": "application/json"
                 },
-            
+
                 "heartbeat_interval": 60,  # Seconds between check-ins
-                "jitter": 0.2  # Decimal jitter factor (0.0-1.0)
+                "jitter": 0.2,  # Decimal jitter factor (0.0-1.0)
+
+                "p2p_enabled": config.get('p2p_enabled', False),
+                "p2p_port": config.get('p2p_port', 8888),
+
+                "kill_date": config.get('kill_date', "2025-12-31T23:59:59Z"),
+                "working_hours": config.get('working_hours', {
+                    "start_hour": 9,
+                    "end_hour": 17,
+                    "timezone": "UTC",
+                    "days": [1, 2, 3, 4, 5]
+                })
             }
         
             with self.db.get_cursor() as cursor:
@@ -535,7 +546,7 @@ class NeoC2Framework:
     
             hybrid_config = {
                 "protocol": "https",
-            
+
                 "http_get": {
                     "uri": "/api/v1/info",
                     "headers": {
@@ -544,7 +555,7 @@ class NeoC2Framework:
                         "Accept-Language": "en-US,en;q=0.9"
                     }
                 },
-            
+
                 "http_post": {
                     "uri": "/api/v1/submit",
                     "headers": {
@@ -553,10 +564,10 @@ class NeoC2Framework:
                         "Accept": "application/json"
                     }
                 },
-            
+
                 "sleep_time": 60,
                 "jitter": 10,
-            
+
                 "endpoints": {
                     "register": "/api/users/register",
                     "tasks": "/api/users/{agent_id}/profile",
@@ -565,17 +576,25 @@ class NeoC2Framework:
                     "interactive": "/api/users/{agent_id}/settings",
                     "interactive_status": "/api/users/{agent_id}/status"
                 },
-            
+
                 "headers": {
                     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
                     "Accept": "application/json"
                 },
-            
+
                 "heartbeat_interval": 60,  # Seconds between check-ins
                 "jitter": 0.2,  # Decimal jitter factor (0.0-1.0)
-                
+
                 "p2p_enabled": False,  # Enable/disable peer-to-peer agent communication
-                "p2p_port": 8888       # Port for P2P communication between agents
+                "p2p_port": 8888,      # Port for P2P communication between agents
+
+                "kill_date": "2025-12-31T23:59:59Z",  # Default kill date in ISO format
+                "working_hours": {
+                    "start_hour": 9,      # Start of working hours (9 AM)
+                    "end_hour": 17,       # End of working hours (5 PM)
+                    "timezone": "UTC",    # Timezone for working hours
+                    "days": [1, 2, 3, 4, 5]  # Days of week: 1=Monday, 2=Tuesday, ... 7=Sunday
+                }
             }
     
             profile_id = str(uuid.uuid4())

