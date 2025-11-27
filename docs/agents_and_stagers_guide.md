@@ -29,17 +29,8 @@ The Go Agent is an exe compiled, multi-functional agent with features like file 
   
 ### Usage
 ```
-payload go_agent <listener_name> 
-
-#Sleep customization
-NeoC2 > sleep 10
-
-# Kill Agent
-NeoC2 > kill
+payload go_agent <listener_name> [--disable-sandbox]
 ```
-
-
----
 
 
 ## Phantom Hawk Agent 
@@ -79,11 +70,6 @@ payload phantom_hawk myhttps --disable-sandbox
 
 # Execute BOFs
 NeoC2 > coff-loader <agent_id> <bof>
-#Change profile sleep configuration
-NeoC2 > sleep 10
-#Kill Agent
-NeoC2 > kill
-
 ```
 
 
