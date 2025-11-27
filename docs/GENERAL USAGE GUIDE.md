@@ -503,7 +503,14 @@ Profiles define communication characteristics for agents:
     "protocol": "https",
     "sleep_time": 60,
     "p2p_enabled": false,
-    "p2p_port": 8888
+    "p2p_port": 8888,
+    "kill_date": "2025-12-31T23:59:59Z",
+    "working_hours": {
+      "start_hour": 9,
+      "end_hour": 17,
+      "timezone": "UTC",
+      "days": [1, 2, 3, 4, 5]
+    }
   }
 }
 
@@ -517,12 +524,38 @@ profile add <config path>
 listener create <listener_name> https <port> <ip> profile_name=<profile_name>
 ```
 
-### Features
+### Kill Date Configuration
 
-- **Malleable Communications**: Customize agent behavior
-- **Evasion Enhancement**: Blend with legitimate traffic
-- **Environment Adaptation**: Adjust to different network environments
-- **Profile Consistency**: Ensure all components use same settings
+- **Field**: `kill_date`
+- **Format**: ISO 8601 format in UTC timezone (`YYYY-MM-DDTHH:MM:SSZ`)
+- **Example**: `"2025-12-31T23:59:59Z"`
+- **Default**: If not specified, defaults to `"2025-12-31T23:59:59Z"`
+- **Behavior**: When the agent's system time exceeds this date/time, the agent will self-delete
+
+### Working Hours Configuration
+
+- **Field**: `working_hours`
+- **Structure**:
+  - `start_hour`: Start of working hours (0-23 in 24-hour format)
+  - `end_hour`: End of working hours (0-23 in 24-hour format)
+  - `timezone`: Timezone for working hours (currently only UTC is properly handled in the agent)
+  - `days`: Array of days when working hours apply (1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday, 7=Sunday)
+
+**Example**:
+```json
+"working_hours": {
+  "start_hour": 9,      // 9 AM
+  "end_hour": 17,       // 5 PM
+  "timezone": "UTC",    // Timezone
+  "days": [1, 2, 3, 4, 5]  // Monday to Friday
+}
+```
+
+1. Both kill date and working hours are embedded into the agent binary during generation and are not dynamically updated from the server during runtime.
+2. Changes to the profile after agent deployment will NOT affect already deployed agents.
+3. The agent currently handles UTC properly, but other timezones are primarily handled as local time.
+4. Days are numbered from 1-7 (Monday=1, Sunday=7), with Sunday represented as both 0 (Go's default) and 7 (in configuration).
+5. Hours are specified in 24-hour format (0-23).
 
 
 ### Save Content
