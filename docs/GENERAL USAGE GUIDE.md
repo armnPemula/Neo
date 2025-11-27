@@ -46,6 +46,7 @@ agent unmonitor <agent_id>    #Unmonitor an agent in multiplayer
 - Inactive: Agent not checking in (but not removed)
 - Removed: Agent explicitly killed/removed
 
+
 ## Interactive Mode
 
 Task-based Interactive mode provides real-time command execution similar to a reverse shell. When activated:
@@ -71,6 +72,14 @@ NeoC2 [INTERACTIVE:abc123] > whoami
 NeoC2 [INTERACTIVE:abc123] > pwd
 NeoC2 [INTERACTIVE:abc123] > ls -la
 NeoC2 [INTERACTIVE:abc123] > exit
+```
+
+### Change Agent profile configured heartbeat at runtime:
+
+```
+NeoC2 [INTERACTIVE:abc123] > sleep 2
+# Kill agent process
+NeoC2 [INTERACTIVE:abc123] >  kill
 ```
 
 ### Interactive Mode Features
