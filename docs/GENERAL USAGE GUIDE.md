@@ -74,7 +74,7 @@ NeoC2 [INTERACTIVE:abc123] > ls -la
 NeoC2 [INTERACTIVE:abc123] > exit
 ```
 
-### Change Agent profile configured heartbeat at runtime:
+#### Change Agent profile configured heartbeat at runtime:
 
 ```
 NeoC2 [INTERACTIVE:abc123] > sleep 2
