@@ -144,7 +144,6 @@ class AgentManager:
             return False
     
     def stop(self):
-        """Stop the agent manager"""
         if not self.running:
             return True
         
@@ -313,13 +312,12 @@ class AgentManager:
 
           
     def start_agent_result_monitor(self):
-        """Start monitoring agent results (for framework compatibility)"""
+        # ignore
         # This method is called by the framework
         # The actual monitoring is handled by the _result_monitor_worker
         return True
 
     def _load_agent_secret_keys(self):
-        """Load all agent secret keys into memory for fast access"""
         try:
             agents_with_keys = self.db.execute(
                 "SELECT id, secret_key FROM agents WHERE secret_key IS NOT NULL"
@@ -336,7 +334,6 @@ class AgentManager:
             self.logger.error(f"Error loading agent secret keys: {str(e)}")
 
     def _generate_secret_key(self):
-        """Generate a secure secret key for agent communication"""
         return Fernet.generate_key().decode()
 
     def _encrypt_data(self, agent_id, data):
@@ -405,7 +402,6 @@ class AgentManager:
             return False
     
     def register_agent(self, ip_address, hostname, os_info, user, listener_id, agent_id=None):
-        """Register a new agent - now accepts optional pre-assigned agent_id"""
         # Use provided agent_id or generate new one
         if not agent_id:
             agent_id = str(uuid.uuid4())
@@ -500,7 +496,6 @@ class AgentManager:
         return agent_id
         
     def get_agent(self, agent_id, update_ip=None):
-        """Get agent by ID - load from DB if not in memory. Optionally update IP on check-in."""
         agent = self.agents.get(agent_id)
 
         if agent:
@@ -643,7 +638,6 @@ class AgentManager:
         return False
 
     def add_task(self, agent_id, command):
-        """Add a task to an agent and return a result dictionary."""
         agent = self.get_agent(agent_id)
         if not agent:
             self.logger.warning(f"Agent {agent_id} not found")
@@ -664,7 +658,6 @@ class AgentManager:
             new_task_id = cursor.lastrowid
             self.logger.info(f"Task {new_task_id} added for agent {agent_id}: {processed_command[:50]}...")
             
-            # Also update the in-memory task list if needed
             with agent.lock:
                 agent.tasks.append({
                     'id': new_task_id,
@@ -694,12 +687,10 @@ class AgentManager:
             return {'success': False, 'error': str(e)}
         
     def get_tasks(self, agent_id):
-        """Get pending tasks for an agent"""
         agent = self.get_agent(agent_id)
         if not agent:
             return []
 
-        # ALWAYS query database for pending tasks, not just in-memory list
         db_tasks = self.db.execute('''
             SELECT * FROM agent_tasks 
             WHERE agent_id = ? AND status = 'pending'
