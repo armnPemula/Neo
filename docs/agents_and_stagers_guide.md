@@ -36,7 +36,7 @@ payload go_agent <listener_name> [--disable-sandbox]
 ## Phantom Hawk Agent 
 
 ### Description
-Phantom Hawk is an EXPERIMENTAL Python variant. Not intended to be deployed in real team engagements. 
+Phantom Hawk is a Python variant.
 
 ### Tested
 - Windows x64
@@ -54,7 +54,6 @@ Phantom Hawk is an EXPERIMENTAL Python variant. Not intended to be deployed in r
 - **Module Execution Capability**: Runs extensible modules from C2
 - **P2P Agent Communication**: Configurable Agent command forwarding to other Agents in same network.
 - **Sanbox & Debugger Detection**: Self deletes in sandboxed environment
-- **Embedded Coff-loader**: (In-memory COFF Loading is under active development). Compile your own COFFLoader64.exe and place in the /agents directory. 
 
 ### Limitations
 - Larger payload size due to comprehensive feature set
@@ -66,9 +65,6 @@ Phantom Hawk is an EXPERIMENTAL Python variant. Not intended to be deployed in r
 payload phantom_hawk <listener_id> [output_file] [--obfuscate] [--disable-sandbox]
 payload pahntom_hawk myhttps 
 payload phantom_hawk myhttps --disable-sandbox
-
-# Execute BOFs
-NeoC2 > coff-loader <agent_id> <bof>
 ```
 
 
