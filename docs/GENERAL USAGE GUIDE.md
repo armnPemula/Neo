@@ -232,7 +232,7 @@ NeoC2 provides enhanced file operations with automatic handling of encoded conte
 - `upload <remote_path> <base64_data>` - agent receives and decodes the file
 - CLI Integration: Use the `upload` command to send files to agents
 
-### Save Command
+### Save 
 - `save <task_id>` - Saves the complete result from given task id
 - Files ae stored on the server logs directory.
 - Download to your connected client machine using `download <path>`
