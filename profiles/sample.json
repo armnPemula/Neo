@@ -39,9 +39,9 @@
     "kill_date": "2027-12-31T23:59:59Z",
     "working_hours": {
       "start_hour": 9,
-      "end_hour": 17,
+      "end_hour": 24,
       "timezone": "UTC",
-      "days": [1, 2, 3, 4, 5]
+      "days": [1, 2, 3, 4, 5, 6, 7]
     }
   }
 }
