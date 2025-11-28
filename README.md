@@ -48,7 +48,7 @@ _A modular server-client architecture post-exploitation framework built for coll
 ```bash
 ...
 IP=<your public ip>
-SECRET_KEY=<your random key>
+SECRET_KEY=<your random key>      # Change from default
 DEFAULT_USERNAME=<your username>  # REQUIRED - no default provided
 DEFAULT_PASSWORD=<your pass>      # REQUIRED - no default provided
 ```
