@@ -29,7 +29,7 @@ The Go Agent is an exe compiled, multi-functional agent with features like file 
   
 ### Usage
 ```
-payload go_agent <listener_name> [--disable-sandbox]
+payload go_agent <listener_name> [--disable-sandbox] [--linux] [--windows]
 ```
 
 
@@ -62,7 +62,7 @@ Phantom Hawk is a Python variant.
 
 ### Usage
 ```
-payload phantom_hawk <listener_id> [--obfuscate] [--disable-sandbox]
+payload phantom_hawk <listener_id> [--obfuscate] [--disable-sandbox] [--linux] [--windows]
 payload pahntom_hawk myhttps 
 payload phantom_hawk myhttps --disable-sandbox
 ```
