@@ -3314,7 +3314,7 @@ DB Inactive:       {stats['db_inactive_agents']}
                     return output.strip(), 'success'
                 elif base_command == 'task':
                     if len(command_parts) < 2:
-                        return "All pending tasks across all agents would be shown here", 'info'
+                        return "task <agent_id> pending tasks would be shown here", 'info'
                     else:
                         agent_id = command_parts[1]
                         tasks = self.db.execute('''
