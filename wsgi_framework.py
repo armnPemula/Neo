@@ -242,13 +242,13 @@ class NeoC2Framework:
                     "Accept": "application/json"
                 },
 
-                "heartbeat_interval": 60,  # Seconds between check-ins
+                "heartbeat_interval": 10,  # Seconds between check-ins
                 "jitter": 0.2,  # Decimal jitter factor (0.0-1.0)
 
                 "p2p_enabled": False,  # Enable/disable peer-to-peer agent communication
                 "p2p_port": 8888,      # Port for P2P communication between agents
 
-                "kill_date": "2025-12-31T23:59:59Z",  # Default kill date in ISO format
+                "kill_date": "2027-12-31T23:59:59Z",  # Default kill date in ISO format
                 "working_hours": {
                     "start_hour": 9,      # Start of working hours (9 AM)
                     "end_hour": 17,       # End of working hours (5 PM)
@@ -348,13 +348,13 @@ class NeoC2Framework:
                     "Accept": "application/json"
                 },
 
-                "heartbeat_interval": 60,  # Seconds between check-ins
+                "heartbeat_interval": 10,  # Seconds between check-ins
                 "jitter": 0.2,  # Decimal jitter factor (0.0-1.0)
 
                 "p2p_enabled": config.get('p2p_enabled', False),
                 "p2p_port": config.get('p2p_port', 8888),
 
-                "kill_date": config.get('kill_date', "2025-12-31T23:59:59Z"),
+                "kill_date": config.get('kill_date', "2027-12-31T23:59:59Z"),
                 "working_hours": config.get('working_hours', {
                     "start_hour": 9,
                     "end_hour": 17,
