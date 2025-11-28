@@ -29,7 +29,6 @@ COMMANDS:
   reporting   - Generate reports
   event       - View Event monitor 
 
-
   status      - Show framework status
   history     - Show command history
   clear       - Clear terminal
