@@ -4064,7 +4064,7 @@ DB Inactive:       {stats['db_inactive_agents']}
                         status = 'success'
                     elif base_cmd == 'task':
                         if len(command_parts) < 2:
-                            result = "All pending tasks across all agents would be shown here"
+                            result = "task <agent_id> pending tasks would be shown here"
                             status = 'info'
                         else:
                             agent_id = command_parts[1]
@@ -4319,7 +4319,7 @@ DB Inactive:       {stats['db_inactive_agents']}
                 status = 'success'
             elif base_cmd == 'task':
                 if len(command_parts) < 2:
-                    result = "All pending tasks across all agents would be shown here"
+                    result = "task <agent_id> pending tasks would be shown here"
                     status = 'info'
                 else:
                     agent_id = command_parts[1]
