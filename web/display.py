@@ -17,7 +17,7 @@ COMMANDS:
   interactive - Check if session is in interactive mode
   download    - Download files from agents
   upload      - Upload files to agents
-  save        - Save specific results to loot directory
+  save        - Save specific results to logs directory
   payload_upload - Upload staging payload to C2 endpoint
   tty_shell   - Start tty shell. Agent specific cmd. 
   evasion     - Evasion techniques
