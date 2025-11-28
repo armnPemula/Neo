@@ -435,7 +435,7 @@ NeoC2 implements a sophisticated task management system:
 ### Task Commands
 
 ```
-task list                     # Show pending tasks
+task <agent_id>                     # Show pending tasks
 addtask <agent_id> <command>  # Add task to agent queue
 ```
 
