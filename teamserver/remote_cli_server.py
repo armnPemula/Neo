@@ -1559,16 +1559,20 @@ class RemoteCLIServer:
 
     def handle_profile_command(self, command_parts, session):
         if len(command_parts) < 2:
-            return "Usage: profile <add> [options]", "info"
+            return """Profile Management Commands:
+  profile add <path_to_json>          - Add a new communication profile from a JSON file
+  profile add base64:<encoded_json>   - Add a new communication profile from base64 encoded JSON
+  profile list                        - List all communication profiles in the database
+""", "info"
 
         action = command_parts[1].lower()
-        
+
         if action == 'add':
             if len(command_parts) < 3:
                 return "Usage: profile add <path_to_json> OR profile add base64:<base64_encoded_json>", "error"
-            
+
             profile_source = command_parts[2]
-            
+
             try:
                 if profile_source.startswith('base64:'):
                     encoded_data = profile_source[7:]  # Remove 'base64:' prefix
@@ -1577,29 +1581,29 @@ class RemoteCLIServer:
                     profile_data = json.loads(json_str)
                 else:
                     json_path = profile_source
-                    
+
                     if not os.path.exists(json_path) or not json_path.lower().endswith('.json'):
                         return f"Invalid JSON file path: {json_path}", "error"
-                        
+
                     with open(json_path, 'r') as f:
                         profile_data = json.load(f)
-                
+
                 name = profile_data.get('name')
                 if not name:
                     return "Profile JSON must contain a 'name' field", "error"
-                    
+
                 description = profile_data.get('description', '')
                 config = profile_data.get('config', {})
-                
+
                 if not isinstance(config, dict):
                     return "Profile config must be a dictionary object", "error"
-                
+
                 config_str = json.dumps(config)
-                
+
                 profile_id = self.db.add_profile(name, description, config_str)
-                
+
                 return f"Profile '{name}' added successfully with ID: {profile_id}", "success"
-                
+
             except FileNotFoundError:
                 return f"Profile file not found: {profile_source}", "error"
             except base64.binascii.Error:
@@ -1610,8 +1614,37 @@ class RemoteCLIServer:
                 return f"Profile error: {str(e)}", "error"
             except Exception as e:
                 return f"Error adding profile: {str(e)}", "error"
+
+        elif action == 'list':
+            try:
+                profiles = self.db.get_all_profiles()
+
+                if not profiles:
+                    return "No profiles found in the database.", "info"
+
+                output = "Communication Profiles:\n"
+                output += "-" * 100 + "\n"
+                output += f"{'ID':<38} {'Name':<20} {'Description':<30}\n"
+                output += "-" * 100 + "\n"
+
+                for profile in profiles:
+                    profile_id = profile.get('id', 'N/A')
+                    name = profile.get('name', 'N/A')
+                    description = profile.get('description', 'N/A')
+
+                    # Truncate description if too long
+                    if len(description) > 28:
+                        description = description[:25] + "..."
+
+                    output += f"{profile_id:<38} {name:<20} {description:<30}\n"
+
+                return output, "success"
+
+            except Exception as e:
+                return f"Error listing profiles: {str(e)}", "error"
+
         else:
-            return f"Unknown profile action: {action}. Use 'profile add <path_to_json>' or 'profile add base64:<encoded>'", "error"
+            return f"Unknown profile action: {action}. Available actions: add, list", "error"
 
     def handle_payload_command(self, command_parts, session):
 
