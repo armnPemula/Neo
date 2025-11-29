@@ -9,7 +9,6 @@
 - [Modules and Post-Exploitation](#modules-and-post-exploitation)
 - [Evasion Techniques](#evasion-techniques)
 - [File Operations](#file-operations)
-- [Persistence Mechanisms](#persistence-mechanisms)
 - [Security Features](#security-features)
 - [Task Chaining](#task-chaining-web-ui-only)
 - [Task Management](#task-management)
@@ -255,61 +254,6 @@ save <task_id>
 save 2
 download logs/task_2_20251128_224240.txt
 ```
-
-## Persistence Mechanisms
-
-NeoC2 supports multiple persistence methods across platforms:
-
-### Windows Persistence
-
-1. **Registry Keys**: HKCU\Software\Microsoft\Windows\CurrentVersion\Run
-2. **Scheduled Tasks**: Using schtasks utility
-3. **WMI Events**: Permanent event subscriptions
-4. **Service Creation**: Installing as Windows service
-5. **Startup Folder**: Adding to user startup directory
-
-### Linux Persistence
-
-1. **Cron Jobs**: Scheduled execution via crontab
-2. **Systemd Services**: Persistent service configuration
-3. **Init Scripts**: Traditional SysV init scripts
-4. **Bashrc Modification**: Adding to shell initialization
-5. **Library Preloading**: LD_PRELOAD technique
-
-### macOS Persistence
-
-1. **Launch Agents**: Property list files in ~/Library/LaunchAgents
-2. **Launch Daemons**: System-wide launch daemons
-3. **Login Items**: Applications that start at login
-4. **Cron Jobs**: Similar to Linux cron
-5. **Shell Profiles**: Modifying .bash_profile, .zshrc
-
-### Persistence Commands
-
-```
-run persistence agent_id=<id> method=<method> [options]
-```
-
-Example:
-```
-run persistence agent_id=abc12345 method=registry payload_path=C:\agent.exe name=WindowsUpdate
-```
-## Lateral Movements Module
-
-Module Features:
-- Multi-platform support: Works on Windows, Linux, and macOS systems
-- Multiple techniques: WMI, SMB, SSH, PsExec, RDP, DCOM, and WinRM
-- Flexible authentication: Supports credential-based and context-based movement
-- Configurable options: Target, technique, credentials, payload path, execution method, and timeout
-
-### Supported Techniques:
-1. WMI (Windows Management Instrumentation): Remote execution via WMI
-2. SMB (Server Message Block): File sharing and execution via network shares
-3. SSH (Secure Shell): Remote execution on Linux/Unix systems
-4. PsExec: Windows remote execution tool
-5. RDP (Remote Desktop Protocol): Drive redirection and session establishment
-6. DCOM (Distributed Component Object Model): Alternative remote execution
-7. WinRM (Windows Remote Management): PowerShell remoting
 
 ## Security Features
 
