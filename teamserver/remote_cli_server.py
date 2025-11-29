@@ -20,7 +20,7 @@ from core.config import NeoC2Config
 from armory.module_manager import ModuleManager
 from teamserver.listener_manager import ListenerManager
 from teamserver.agent_manager import AgentManager
-from web import display
+from teamserver import help
 import logging
 from teamserver.user_manager import UserManager
 from teamserver.multiplayer_coordinator import MultiplayerCoordinator
@@ -114,7 +114,7 @@ class RemoteCLIServer:
     
     def handle_listener_command(self, command_parts, listener_manager=None):
         if len(command_parts) < 2:
-            return display.get_listener_help_display(), 'info'
+            return help.get_listener_help_display(), 'info'
         
         action = command_parts[1].lower()
 
@@ -256,7 +256,7 @@ class RemoteCLIServer:
 
     def handle_modules_command(self, command_parts, session):
         if len(command_parts) < 2:
-            return display.get_modules_help_display(), 'info'
+            return help.get_modules_help_display(), 'info'
         
         action = command_parts[1].lower()
         
@@ -397,7 +397,7 @@ class RemoteCLIServer:
 
     def handle_run_command(self, command_parts, session):
         if len(command_parts) < 2:
-            return display.get_run_help_display(), 'info'
+            return help.get_run_help_display(), 'info'
         
         module_name = command_parts[1]
         
@@ -606,7 +606,7 @@ class RemoteCLIServer:
 
     def handle_agent_command(self, command_parts, session):
         if len(command_parts) < 2:
-            return display.get_agent_help_display(), 'info'
+            return help.get_agent_help_display(), 'info'
         
         action = command_parts[1].lower()
         
@@ -886,7 +886,7 @@ class RemoteCLIServer:
 
     def handle_evasion_command(self, command_parts, session):
         if len(command_parts) < 3:
-            return display.get_evasion_help_display(), 'info'
+            return help.get_evasion_help_display(), 'info'
         
         action = command_parts[1].lower()
         evasion_type = command_parts[2].lower()
@@ -1022,16 +1022,16 @@ class RemoteCLIServer:
     def handle_encryption_command(self, command_parts, session):
 
         if not command_parts:
-            return display.get_encryption_help(), 'info'
+            return help.get_encryption_help(), 'info'
         
         if len(command_parts) < 2:
-            return display.get_encryption_help(), 'info'
+            return help.get_encryption_help(), 'info'
         
         if command_parts[0].lower() == 'encryption':
             command_parts = command_parts[1:]
         
         if not command_parts:
-            return display.get_encryption_help(), 'info'
+            return help.get_encryption_help(), 'info'
         
         action = command_parts[0].lower()
         
@@ -1048,7 +1048,7 @@ class RemoteCLIServer:
         elif action == 'list':
             return self.handle_list(command_parts)
         elif action == 'help':
-            return display.get_encryption_help(), 'info'
+            return help.get_encryption_help(), 'info'
         else:
             return f"Unknown action: {action}. Use 'encryption help' for available commands.", 'error'
 
@@ -3447,7 +3447,7 @@ EXAMPLES:
                     else:
                         return 'Not in interactive mode. Use: agent interact <agent_id>', 'error'
                 elif base_command == 'help':
-                    result = display.get_help_display()
+                    result = help.get_help_display()
                     return result, 'success'
                 elif base_command == 'status':
                     stats = self.agent_manager.get_agent_stats()
@@ -3803,7 +3803,7 @@ DB Inactive:       {stats['db_inactive_agents']}
             agent_command_parts = ['agent', 'interact'] + command_parts[1:]
             return self.handle_agent_command(agent_command_parts, session)
         elif base_command == 'help':
-            return display.get_help_display(), 'success'
+            return help.get_help_display(), 'success'
         elif base_command == 'back':
             if hasattr(session, 'interactive_mode') and session.interactive_mode and session.current_agent:
                 agent_manager = session.agent_manager
@@ -4217,7 +4217,7 @@ DB Inactive:       {stats['db_inactive_agents']}
                         else:
                             result, status = 'Not in interactive mode. Use: agent interact <agent_id>', 'error'
                     elif base_cmd == 'help':
-                        result = display.get_help_display()
+                        result = help.get_help_display()
                         status = 'success'
                     elif base_cmd == 'status':
                         stats = self.agent_manager.get_agent_stats()
@@ -4525,7 +4525,7 @@ DB Inactive:       {stats['db_inactive_agents']}
                 else:
                     result, status = 'Not in interactive mode. Use: agent interact <agent_id>', 'error'
             elif base_cmd == 'help':
-                result = display.get_help_display()
+                result = help.get_help_display()
                 status = 'success'
             elif base_cmd == 'status':
                 stats = self.agent_manager.get_agent_stats()
