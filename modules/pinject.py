@@ -52,10 +52,8 @@ def execute(options, session):
             "error": "shellcode is required"
         }
 
-    # Set the current agent in the session
     session.current_agent = agent_id
 
-    # Process the shellcode input - allow different formats
     try:
         shellcode_bytes = process_shellcode_input(shellcode_input)
     except ValueError as e:
@@ -67,10 +65,8 @@ def execute(options, session):
     # Base64 encode the shellcode bytes
     encoded_shellcode = base64.b64encode(shellcode_bytes).decode('utf-8')
 
-    # Create the command with the 'shellcode' prefix that the agent recognizes
     command = f"shellcode {encoded_shellcode}"
 
-    # Check if session has a valid agent_manager
     if not hasattr(session, 'agent_manager') or session.agent_manager is None:
         return {
             "success": False,
@@ -114,11 +110,8 @@ def process_shellcode_input(shellcode_input):
         except Exception:
             pass  # Not valid base64, continue to other formats
 
-    # Check if it's a hex string format
-    # Remove common hex prefixes and separators
     clean_hex = shellcode_input.replace('0x', '').replace(',', '').replace('\\', '').replace(' ', '').replace('\n', '').replace('\t', '')
 
-    # Validate that it's a valid hex string
     if re.match(r'^[0-9a-fA-F]+$', clean_hex) and len(clean_hex) % 2 == 0:
         try:
             return bytes.fromhex(clean_hex)
@@ -131,17 +124,13 @@ def process_shellcode_input(shellcode_input):
 
 def is_base64(s):
     try:
-        # Check if length is a multiple of 4
         if len(s) % 4 != 0:
             return False
 
-        # Check if it contains only valid base64 characters
         if not re.match(r'^[A-Za-z0-9+/]*={0,2}$', s):
             return False
 
-        # Actually try to decode it
         decoded = base64.b64decode(s)
-        # Check if re-encoding produces the same result (with padding normalized)
         encoded = base64.b64encode(decoded).decode('utf-8')
         return encoded == s.strip('=')
     except Exception:
