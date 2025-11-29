@@ -473,8 +473,6 @@ class NeoC2Framework:
                     })
                 },
 
-                "sleep_time": config.get('sleep_time', 60),
-                "jitter": config.get('jitter', 10),
 
                 "endpoints": {
                     "register": "/api/users/register",
@@ -499,10 +497,10 @@ class NeoC2Framework:
 
                 "kill_date": config.get('kill_date', "2027-12-31T23:59:59Z"),
                 "working_hours": config.get('working_hours', {
-                    "start_hour": 9,
-                    "end_hour": 17,
+                    "start_hour": 0,
+                    "end_hour": 24,
                     "timezone": "UTC",
-                    "days": [1, 2, 3, 4, 5]
+                    "days": [1, 2, 3, 4, 5, 6, 7]
                 })
             }
         
@@ -565,8 +563,6 @@ class NeoC2Framework:
                     }
                 },
 
-                "sleep_time": 60,
-                "jitter": 10,
 
                 "endpoints": {
                     "register": "/api/users/register",
@@ -590,10 +586,10 @@ class NeoC2Framework:
 
                 "kill_date": "2027-12-31T23:59:59Z",  # Default kill date in ISO format
                 "working_hours": {
-                    "start_hour": 9,      # Start of working hours (9 AM)
-                    "end_hour": 17,       # End of working hours (5 PM)
+                    "start_hour": 0,      # Start of working hours
+                    "end_hour": 24,       # End of working hours
                     "timezone": "UTC",    # Timezone for working hours
-                    "days": [1, 2, 3, 4, 5]  # Days of week: 1=Monday, 2=Tuesday, ... 7=Sunday
+                    "days": [1, 2, 3, 4, 5, 6, 7]  # Days of week: 1=Monday, 2=Tuesday, ... 7=Sunday
                 }
             }
     
