@@ -119,7 +119,7 @@ class NeoC2Framework:
             self.module_manager.add_default_modules()
 
             self.logger.info("  Creating/Updating profiles to hybrid format...")
-            self._create_default_profiles()
+            self._update_profiles_to_hybrid()
         
             self.logger.info("  Creating default roles...")
             self._create_default_roles()
@@ -427,31 +427,98 @@ class NeoC2Framework:
     def _update_profiles_to_hybrid(self):
         try:
             self.logger.info("Checking and updating profiles to hybrid format...")
-        
+
             existing_profiles = self.db.get_all_profiles()
-        
-            if not existing_profiles:
-                self.logger.warning("No profiles found. Creating hybrid default profile...")
-                self._create_default_profiles()
-                return
-        
             default_profile = self.db.get_profile_by_name('default')
-        
+
             if not default_profile:
-                self.logger.warning("Default profile not found. Creating hybrid default profile...")
-                self._create_default_profiles()
+                # Create a new hybrid profile if no default exists
+                self.logger.info("Creating new hybrid default profile...")
+
+                hybrid_config = {
+                    "protocol": "https",
+
+                    "http_get": {
+                        "uri": "/api/v1/info",
+                        "headers": {
+                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                            "Accept": "application/json, text/plain, */*",
+                            "Accept-Language": "en-US,en;q=0.9"
+                        }
+                    },
+
+                    "http_post": {
+                        "uri": "/api/v1/submit",
+                        "headers": {
+                            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                            "Content-Type": "application/json",
+                            "Accept": "application/json"
+                        }
+                    },
+
+
+                    "endpoints": {
+                        "register": "/api/users/register",
+                        "tasks": "/api/users/{agent_id}/profile",
+                        "results": "/api/users/{agent_id}/activity",
+                        "download": "/api/assets/main.js",
+                        "interactive": "/api/users/{agent_id}/settings",
+                        "interactive_status": "/api/users/{agent_id}/status"
+                    },
+
+                    "headers": {
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                        "Accept": "application/json"
+                    },
+
+                    "heartbeat_interval": 10,  # Seconds between check-ins
+                    "jitter": 0.2,  # Decimal jitter factor (0.0-1.0)
+
+                    "p2p_enabled": False,  # Enable/disable peer-to-peer agent communication
+                    "p2p_port": 8888,      # Port for P2P communication between agents
+
+                    "kill_date": "2027-12-31T23:59:59Z",  # Default kill date in ISO format
+                    "working_hours": {
+                        "start_hour": 0,      # Start of working hours
+                        "end_hour": 24,       # End of working hours
+                        "timezone": "UTC",    # Timezone for working hours
+                        "days": [1, 2, 3, 4, 5, 6, 7]  # Days of week: 1=Monday, 2=Tuesday, ... 7=Sunday
+                    }
+                }
+
+                profile_id = str(uuid.uuid4())
+                self.db.create_profile(
+                    profile_id=profile_id,
+                    name='default',
+                    description='Default HTTP communication profile (Hybrid format)',
+                    config=hybrid_config
+                )
+                self.logger.info("Hybrid default profile created successfully")
+
+                verify = self.db.get_profile_by_name('default')
+                if verify:
+                    self.logger.info(f"Verified: Default profile exists")
+                    self.logger.info(f"  - http_get: ✓")
+                    self.logger.info(f"  - http_post: ✓")
+                    self.logger.info(f"  - endpoints: ✓")
+                    self.logger.info(f"  - headers: ✓")
+                    self.logger.info(f"  - heartbeat_interval: ✓")
+                else:
+                    self.logger.warning("Warning: Could not verify default profile creation")
                 return
-        
+
+            # Check if the existing profile is already in hybrid format
             config = default_profile.get('config', {})
             has_listener_keys = 'http_get' in config and 'http_post' in config
             has_payload_keys = 'endpoints' in config and 'headers' in config
-        
+
             if has_listener_keys and has_payload_keys:
                 self.logger.info("Default profile already has hybrid format")
                 return
-        
+
+            # Upgrade the existing profile to hybrid format
             self.logger.info("Updating default profile to hybrid format...")
-        
+
             hybrid_config = {
                 "protocol": "https",
 
@@ -503,15 +570,15 @@ class NeoC2Framework:
                     "days": [1, 2, 3, 4, 5, 6, 7]
                 })
             }
-        
+
             with self.db.get_cursor() as cursor:
                 cursor.execute(
                     "UPDATE profiles SET config = ? WHERE name = ?",
                     (json.dumps(hybrid_config), 'default')
                 )
-        
+
             self.logger.info("Default profile updated to hybrid format successfully")
-        
+
             updated_profile = self.db.get_profile_by_name('default')
             if updated_profile:
                 updated_config = updated_profile['config']
@@ -521,102 +588,13 @@ class NeoC2Framework:
                 self.logger.info(f"  - endpoints: {('endpoints' in updated_config)}")
                 self.logger.info(f"  - headers: {('headers' in updated_config)}")
                 self.logger.info(f"  - heartbeat_interval: {('heartbeat_interval' in updated_config)}")
-        
+
         except Exception as e:
             self.logger.error(f"Error updating profiles to hybrid format: {str(e)}")
             import traceback
             traceback.print_exc()
 
 
-    def _create_default_profiles(self):
-        try:
-            self.logger.info("Checking for default profiles...")
-    
-            existing_profiles = self.db.get_all_profiles()
-            if existing_profiles:
-                default_exists = any(p['name'] == 'default' for p in existing_profiles)
-                if default_exists:
-                    self.logger.info(f"Found existing default profile")
-                    self._update_profiles_to_hybrid()
-                    return
-    
-            self.logger.info("No default profile found, creating hybrid profile...")
-    
-            hybrid_config = {
-                "protocol": "https",
-
-                "http_get": {
-                    "uri": "/api/v1/info",
-                    "headers": {
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                        "Accept": "application/json, text/plain, */*",
-                        "Accept-Language": "en-US,en;q=0.9"
-                    }
-                },
-
-                "http_post": {
-                    "uri": "/api/v1/submit",
-                    "headers": {
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                        "Content-Type": "application/json",
-                        "Accept": "application/json"
-                    }
-                },
-
-
-                "endpoints": {
-                    "register": "/api/users/register",
-                    "tasks": "/api/users/{agent_id}/profile",
-                    "results": "/api/users/{agent_id}/activity",
-                    "download": "/api/assets/main.js",
-                    "interactive": "/api/users/{agent_id}/settings",
-                    "interactive_status": "/api/users/{agent_id}/status"
-                },
-
-                "headers": {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-                    "Accept": "application/json"
-                },
-
-                "heartbeat_interval": 10,  # Seconds between check-ins
-                "jitter": 0.2,  # Decimal jitter factor (0.0-1.0)
-
-                "p2p_enabled": False,  # Enable/disable peer-to-peer agent communication
-                "p2p_port": 8888,      # Port for P2P communication between agents
-
-                "kill_date": "2027-12-31T23:59:59Z",  # Default kill date in ISO format
-                "working_hours": {
-                    "start_hour": 0,      # Start of working hours
-                    "end_hour": 24,       # End of working hours
-                    "timezone": "UTC",    # Timezone for working hours
-                    "days": [1, 2, 3, 4, 5, 6, 7]  # Days of week: 1=Monday, 2=Tuesday, ... 7=Sunday
-                }
-            }
-    
-            profile_id = str(uuid.uuid4())
-            self.db.create_profile(
-                profile_id=profile_id,
-                name='default',
-                description='Default HTTP communication profile (Hybrid format)',
-                config=hybrid_config
-            )
-            self.logger.info("Hybrid default profile created successfully")
-    
-            verify = self.db.get_profile_by_name('default')
-            if verify:
-                self.logger.info(f"Verified: Default profile exists")
-                self.logger.info(f"  - http_get: ✓")
-                self.logger.info(f"  - http_post: ✓")
-                self.logger.info(f"  - endpoints: ✓")
-                self.logger.info(f"  - headers: ✓")
-                self.logger.info(f"  - heartbeat_interval: ✓")
-            else:
-                self.logger.warning("Warning: Could not verify default profile creation")
-        
-        except Exception as e:
-            self.logger.error(f"Error creating default profiles: {str(e)}")
-            import traceback
-            traceback.print_exc()
     
     def start(self):
         """Start the NeoC2 framework and all its components"""
