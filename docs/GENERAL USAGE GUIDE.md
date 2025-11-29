@@ -4,6 +4,7 @@
 - [Agent Management](#agent-management)
 - [Interactive Mode](#interactive-mode)
 - [Payload Generation](#payload-generation)
+- [Payload Staging](#payload-staging)
 - [Listener Management](#listener-management)
 - [Modules and Post-Exploitation](#modules-and-post-exploitation)
 - [Evasion Techniques](#evasion-techniques)
@@ -122,24 +123,25 @@ NeoC2 > stager generate bash host=0.0.0.0 port=443 protocol=https
 NeoC2 > stager generate powershell host=0.0.0.0 port=443 protocol=https
 ```
 
-### Payload Upload Feature
+## Payload Staging
 
-NeoC2 supports uploading custom payloads directly through the remote cli:
+NeoC2 supports staging payloads directly through the `payload_upload` base-command of the remote client server, allowing operators to deploy binary executables like .exe, .dll, or other file types in addition to Python scripts.
 
-#### Uploading Payloads
-1. Select any payload file (EXE, DLL, PY, JS, etc.) up to 50MB
-2. The payload is automatically XOR encrypted using the SECRET_KEY environment variable
-3. The encrypted payload is Base64 encoded and made available at `/api/assets/main.js`
+### Capabilities
+- **Multi-Format Support**: Upload EXE, DLL, PY, JS, VBS, BAT, PS1, and other binary/script files
+- **Encryption**: XOR encryption using SECRET_KEY environment variable with Base64 encoding
+- **Automatic Serving**: Uploaded payloads automatically available at `/api/assets/main.js`
+- **Intelligent Execution**: Droppers automatically detect payload type and handle appropriately
+- **Maximum Size**: Supports payloads up to 50MB
+- **Overwrite Functionality**: New uploads replace previous payloads
 
+#### Example Usage:
 ```
-NeoC2 > payload_upload <options> 
+NeocC2 > payload_upload <options>
+# Then deploy droppers 
+NeoC2 > stager generate linux_binary host=<c2_host> port=<c2_port> protocol=https
 ```
 
-#### Supported Payload Types
-- **Python scripts**: Executed in-memory by droppers (stealthy)
-- **Windows executables (.exe)**: Written to temp directory, executed, and cleaned up
-- **Dynamic link libraries (.dll)**: Can be loaded by appropriate loaders
-- **Other binary files**: Handled according to file type detection
 
 
 ## Listener Management
