@@ -27,7 +27,10 @@ The Go Agent is an exe compiled, multi-functional agent with features like file 
 - **Sanbox & Debugger Detection**: Self deletes in sandboxed environment
 - **Working hours & Kill dates**: The Go-agent incorporates a profile configurable kill-dates and working-hours restrictions
 - **Process Injection**: Shellcode injection into notepad.exe or explorer.exe with pinject
-  
+
+### Limitations
+- Larger payload size due to comprehensive feature set
+
 ### Usage
 ```
 payload go_agent <listener_name> [--disable-sandbox] [--linux] [--windows]
@@ -58,8 +61,6 @@ Phantom Hawk is a Python variant.
 
 ### Limitations
 - Larger payload size due to comprehensive feature set
-- Network communication may be detected by advanced network monitoring
-- May be flagged by advanced threat detection tools
 
 ### Usage
 ```
