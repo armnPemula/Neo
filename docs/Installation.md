@@ -1,8 +1,8 @@
 # Installation
 
 
-[How to install](#how-to-install)
-[Basic workflow](#basic-workflow)
+- [How to install](#how-to-install)
+- [Basic workflow](#basic-workflow) 
 
 
 ## How to install
