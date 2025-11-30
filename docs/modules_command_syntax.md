@@ -11,7 +11,7 @@ run <module_name> <option>=<value>
 
 ## Examples
 
-THESE ARE JUST EXAMPLES, OTHER AVAILABLE MODULES NOT COVERED HERE CAN BE FOUND WITH `modules list` AND THER USAGE: `modules info <name>`
+Use `modules list` for a list of both external and built-in modules that might and might not be covered by documentation and their usage `modules info <name>`
 
 ### Persistence Module
 
