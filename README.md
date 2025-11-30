@@ -36,7 +36,7 @@ _A modular server-client architecture post-exploitation framework built for coll
 NeoC2 works well on Kali Linux. See the [Installations](https://neoc2.readthedocs.io/en/latest/Installation/) docs for instructions. 
 
 ## Documentation 
-Please [https://neoc2.readthedocs.io/en/latest/](https://neoc2.readthedocs.io/en/latest/) for all Usage guides 
+Read [https://neoc2.readthedocs.io/en/latest/](https://neoc2.readthedocs.io/en/latest/) for all Usage guides 
 
 Blog PART 1: Learning: Neo Command & Control Framework (Part 1) Tutorial & Usage guide [https://medium.com/@stillbigjosh/learning-neo-command-control-framework-part-1-912ac0b68f2b](https://medium.com/@stillbigjosh/learning-neo-command-control-framework-part-1-912ac0b68f2b)
 
