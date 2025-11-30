@@ -37,8 +37,7 @@ _A modular server-client architecture post-exploitation framework built for coll
 ### Prerequisites
 - Linux Machine
 - Python 3.*
-- Golang
-- Virtual environment (recommended)
+- Golang 1.*
 - OpenSSL for HTTPS certificates
 
 ### Environment Variables
@@ -94,53 +93,8 @@ Default user set via environment variable is Administrator. Other multiplayer op
 ```bash
 neoc2-cli --server <IP>:8444 --username <> --password <>
 ```
+<img width="671" height="390" alt="cli" src="https://github.com/user-attachments/assets/3894cf23-6b5a-4b94-bea8-f82e504a725a" />
 
-### Basic Workflow
-Building a payload using the listener created from your profile config ensures that your chosen API endpoints are visible to the Endpoint Auto-detection Background service.
-
-1. Using default listener and profile
-
-```
-NeoC2 > listener start web_app_default
-# Build payload
-NeoC2 > payload list
-NeoC2 > payload <agent_type> <listener_name>
-# List active agents
-NeoC2 > agent list
-# Interact with agent
-NeoC2 > interact <agent-id>
-```
-
-2. Using custom profile and own listener
-```
-# Add communication profile 
-# Sample communication profile in profiles/sample.json
-# Change its endpoints based on your intended usage
-NeoC2 > profile add profiles/profile.json
-NeoC2 > profile list
-
-# Create a HTTPS listener
-NeoC2 > listener create <listener_name> https <port> <IP> profile_name=<profile_name>
-NeoC2 > listener start <listener_name>
-
-# Build payload 
-NeoC2 > payload <agent_type> <listener_name>
-```
-USE `neoc2 logs` TO MONITOR NEW AGENT REGISTERS ON A SEPARATE TERMINAL
-
-
-```
-# List active agents
-NeoC2 > beacon
-NeoC2 > agent list
-# Interact with agent
-NeoC2 > interact <agent-id>
-```
-
-### Default Ports
-- Default HTTP/HTTPS Listener: 443
-- User management: 7443
-- Remote CLI: 8444
 
 ## Documentation 
 Please [https://neoc2.readthedocs.io/en/latest/](https://neoc2.readthedocs.io/en/latest/) for Usage guides 
