@@ -26,6 +26,7 @@ The Go Agent is an exe compiled, multi-functional agent with features like file 
 - **Module Execution Capability**: Runs extensible modules from C2
 - **Sanbox & Debugger Detection**: Self deletes in sandboxed environment
 - **Working hours & Kill dates**: The Go-agent incorporates a profile configurable kill-dates and working-hours restrictions
+- **Process Injection**: Shellcode injection into notepad.exe or explorer.exe with pinject
   
 ### Usage
 ```
