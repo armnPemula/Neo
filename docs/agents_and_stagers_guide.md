@@ -33,7 +33,7 @@ The Go Agent is a second stage exe compiled, multi-functional agent with feature
 ### Usage
 ```
 NeoC2 > payload go_agent <listener_name> [--disable-sandbox] [--linux] [--windows]
-NeoC2 [INTERACTIVE:abc123] > [upload, download, tty_shell, pinject, sleep, kill, interact, run, coff-loader]
+NeoC2 [INTERACTIVE:abc123] > [upload, download, tty_shell, pinject, sleep, kill, interact, run]
 ```
 
 
