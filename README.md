@@ -1,4 +1,4 @@
-# The NeoC2 Framework
+<p align="center"># The NeoC2 Framework</p>
 
 <p align=center>
   <a href="https://github.com/stillbigjosh/Neo"><img alt="Release" src="https://img.shields.io/badge/Release-1.1.3-blue.svg"/></a>
