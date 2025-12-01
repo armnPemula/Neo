@@ -14,6 +14,8 @@ run <module_name> <option>=<value>
 
 ## Examples
 
+Most modules will not be covered by this documentation as this was intended to give the operator an idea on the usage of their own extensible modules.
+
 Use `modules list` for a list of both external and built-in modules that might and might not be covered by this guide and pull their usage info with `modules info <name>`
 
 ### Persistence Module
@@ -62,39 +64,9 @@ run persistence agent_id=abc123-4567-8901-2345-67890abcdef1 method=launchd paylo
 ```
 
 
-
-### Keylogger Module
-
-The `keylogger` module executes a PowerShell keylogger that logs keystrokes to a file.
-
-#### Required Options:
-- `agent_id`: ID of the agent to run the keylogger on
-
-#### Optional Options:
-- `log_path`: Path where keystrokes will be logged (default: `%TEMP%\key.log`)
-- `timeout`: Time in minutes to capture keystrokes (default: runs indefinitely)
-
-#### Examples:
-
-**Basic Keylogger:**
-```
-run keylogger agent_id=abc123-4567-8901-2345-67890abcdef1
-```
-
-**Keylogger with Custom Log Path:**
-```
-run keylogger agent_id=abc123-4567-8901-2345-67890abcdef1 log_path=C:\Users\Public\keystrokes.log
-```
-
-**Keylogger with Timeout:**
-```
-run keylogger agent_id=abc123-4567-8901-2345-67890abcdef1 log_path=%TEMP%\capture.log timeout=30
-```
-
-
 ### Screenshot Module
 
-The `screenshot` module executes a PowerShell timed screenshot capture that saves screenshots to a specified path.
+The `screenshot` (external module with a Python-wrapper) executes a PowerShell timed screenshot capture that saves screenshots to a specified path.
 
 #### Required Options:
 - `agent_id`: ID of the agent to run the screenshot capture on
@@ -130,7 +102,7 @@ run screenshot agent_id=abc123-4567-8901-2345-67890abcdef1 path=C:\Temp interval
 
 ### PowerView Module
 
-The `PowerView` module executes a PowerShell PowerView script for network enumeration and domain assessment. PowerView contains numerous functions for Active Directory reconnaissance and mapping trust relationships within a domain environment.
+The `PowerView` (external module with a Python-wrapper) executes a PowerShell PowerView script for network enumeration and domain assessment. PowerView contains numerous functions for Active Directory reconnaissance and mapping trust relationships within a domain environment.
 
 #### Required Options:
 - `agent_id`: ID of the agent to run PowerView enumeration on
@@ -164,7 +136,7 @@ run PowerView agent_id=abc123-4567-8901-2345-67890abcdef1 function=Find-DomainUs
 
 ### Invoke-Portscan Module
 
-The `Invoke-Portscan` module executes a PowerShell script to perform network port scanning. This is commonly used for enumerating open ports and services on target systems.
+The `Invoke-Portscan` (external module with a Python-wrapper) executes a PowerShell script to perform network port scanning. This is commonly used for enumerating open ports and services on target systems.
 
 #### Required Options:
 - `agent_id`: ID of the agent to run Invoke-Portscan on
@@ -201,7 +173,7 @@ run Invoke-Portscan agent_id=abc123-4567-8901-2345-67890abcdef1 computer_name=10
 
 ### Get-ComputerDetail Module
 
-The `Get-ComputerDetail` module executes a PowerShell script to gather comprehensive system information including OS details, hardware specs, network configuration, and running processes.
+The `Get-ComputerDetail` (external module with a Python-wrapper) executes a PowerShell script to gather comprehensive system information including OS details, hardware specs, network configuration, and running processes.
 
 #### Required Options:
 - `agent_id`: ID of the agent to run Get-ComputerDetail on
@@ -235,7 +207,7 @@ run Get-ComputerDetail agent_id=abc123-4567-8901-2345-67890abcdef1 computer_name
 
 ### Bypass-UAC Module
 
-The `Bypass-UAC` module executes a PowerShell UAC bypass technique using various methods to escape medium integrity level and gain elevated privileges. This module leverages multiple UAC bypass techniques from PowerSploit.
+The `Bypass-UAC` (external module with a Python-wrapper) executes a PowerShell UAC bypass technique using various methods to escape medium integrity level and gain elevated privileges. This module leverages multiple UAC bypass techniques from PowerSploit.
 
 #### Required Options:
 - `agent_id`: ID of the agent to run Bypass-UAC on
@@ -262,7 +234,7 @@ run Bypass-UAC agent_id=abc123-4567-8901-2345-67890abcdef1 method=ucmDismMethod
 ```
 ### HostEnum Module
 
-The `HostEnum` module executes a PowerShell comprehensive host enumeration and situational awareness script. It performs local host and/or domain enumeration to gather system information, installed applications, network configuration, processes, services, registry entries, users, groups, security products, and more.
+The `HostEnum` (external module with a Python-wrapper) executes a PowerShell comprehensive host enumeration and situational awareness script. It performs local host and/or domain enumeration to gather system information, installed applications, network configuration, processes, services, registry entries, users, groups, security products, and more.
 
 #### Required Options:
 - `agent_id`: ID of the agent to run HostEnum on
@@ -311,7 +283,7 @@ run Bypass-UAC agent_id=abc123-4567-8901-2345-67890abcdef1 method=UacMethodTcmse
 
 ## Notes
 
-- The `agent_id` parameter is IMPORTANT for all modules as it specifies which agent should execute the module
+- The `agent_id` parameter is IMPORTANT in non-interactive mode as it specifies which agent should execute the module. 
 - For cross-platform modules, ensure the appropriate method/technique is selected for the target OS
 - Some techniques require specific privileges or services to be running on target systems
 - Credentials should be formatted properly as shown in the examples
