@@ -4,6 +4,8 @@
 ## Implemented since last release
 1. Polymorphic go_agent generator
 2. Configurable killdate/workingtime
+3. Process Injection
+4. C2 Redirector support
 
 ## Actively Under development
 1. Enhanced and Opsec safe P2P Agent comm
