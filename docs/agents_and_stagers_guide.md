@@ -64,7 +64,7 @@ Phantom Hawk is a Python variant with limited capability.
 ### Limitations
 - No working hours/kill-date support
 - It doesn't support process injection 
-- No redirector support (yet)
+- No redirector support 
 
 ### Usage
 ```
