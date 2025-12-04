@@ -25,6 +25,7 @@ COMMANDS:
   profile     - Communication profile management (list, add)
   payload     - Generate various payload types
   pinject     - Injects shellcode into notepad.exe & explorer.exe
+  peinject    - Injects PE files by Process Hollowing
   coff-loader - Load bofs on agent session
   taskchain   - Task Orchestration
   reporting   - Generate reports
