@@ -29,8 +29,6 @@ from teamserver.audit_logger import AuditLogger
 
 from evasion.amsi_bypass import AMSIBypass
 from evasion.etw_bypass import ETWBypass
-from evasion.process_injection import ProcessInjection
-from evasion.sleep_obfuscation import SleepObfuscation
 
 from communication.encryption import EncryptionManager
 
@@ -931,35 +929,8 @@ class RemoteCLIServer:
                             return f"Failed to queue Evasion {action} task for agent {session.current_agent}", 'error'
                     else:
                         return command, 'success'
-                elif evasion_type == 'process_injection':
-                    evasion = ProcessInjection(NeoC2Config())
-                    target_pid = options.get('target_pid', '')
-                    payload_path = options.get('payload_path', '')
-                    command = evasion.inject(target_pid, payload_path)
-                    session.evasion_enabled = True
-                    if session.current_agent:
-                        task_id = agent_manager.add_task(session.current_agent, command)
-                        if task_id:
-                            return f"Evasion {action} task {task_id} queued for agent {session.current_agent}", 'success'
-                        else:
-                            return f"Failed to queue Evasion {action} task for agent {session.current_agent}", 'error'
-                    else:
-                        return command, 'success'
-                elif evasion_type == 'sleep_obfuscation':
-                    evasion = SleepObfuscation(NeoC2Config())
-                    technique = options.get('technique', '')
-                    command = evasion.obfuscate(technique)
-                    session.evasion_enabled = True
-                    if session.current_agent:
-                        task_id = agent_manager.add_task(session.current_agent, command)
-                        if task_id:
-                            return f"Evasion {action} task {task_id} queued for agent {session.current_agent}", 'success'
-                        else:
-                            return f"Failed to queue Evasion {action} task for agent {session.current_agent}", 'error'
-                    else:
-                        return command, 'success'
                 else:
-                    return f"Unsupported evasion type: {evasion_type}. Supported: amsi_bypass, etw_bypass, process_injection, sleep_obfuscation", 'error'
+                    return f"Unsupported evasion type: {evasion_type}. Supported: amsi_bypass, etw_bypass", 'error'
             
             elif action == 'disable':
                 if evasion_type == 'amsi_bypass':
@@ -985,30 +956,8 @@ class RemoteCLIServer:
                             return f"Failed to queue Evasion {action} task for agent {session.current_agent}", 'error'
                     else:
                         return command, 'success'
-                elif evasion_type == 'process_injection':
-                    command = "# Process injection disabled"
-                    session.evasion_enabled = False
-                    if session.current_agent:
-                        task_id = agent_manager.add_task(session.current_agent, command)
-                        if task_id:
-                            return f"Evasion {action} task {task_id} queued for agent {session.current_agent}", 'success'
-                        else:
-                            return f"Failed to queue Evasion {action} task for agent {session.current_agent}", 'error'
-                    else:
-                        return command, 'success'
-                elif evasion_type == 'sleep_obfuscation':
-                    command = "# Sleep obfuscation disabled"
-                    session.evasion_enabled = False
-                    if session.current_agent:
-                        task_id = agent_manager.add_task(session.current_agent, command)
-                        if task_id:
-                            return f"Evasion {action} task {task_id} queued for agent {session.current_agent}", 'success'
-                        else:
-                            return f"Failed to queue Evasion {action} task for agent {session.current_agent}", 'error'
-                    else:
-                        return command, 'success'
                 else:
-                    return f"Unsupported evasion type: {evasion_type}. Supported: amsi_bypass, etw_bypass, process_injection, sleep_obfuscation", 'error'
+                    return f"Unsupported evasion type: {evasion_type}. Supported: amsi_bypass, etw_bypass", 'error'
             
             else:
                 return f"Unknown evasion action: {action}. Use: enable, disable", 'error'

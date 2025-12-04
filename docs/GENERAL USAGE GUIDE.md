@@ -321,8 +321,6 @@ run <module_name> [options]   # Execute a module
 
 ```
 # Load and run sleep obfuscation module
-modules load sleep_obfuscation
-run sleep_obfuscation agent_id=<id> technique=jitter
 
 # Load and run persistence module
 modules load persistence

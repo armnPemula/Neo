@@ -165,12 +165,10 @@ COMMANDS:
 
 EXAMPLES:
   • evasion enable amsi_bypass
-  • evasion enable sleep_obfuscation
-  • evasion enable process_injection
   • evasion disable amsi_bypass
 
 TYPES:
-  • amsi_bypass, sleep_obfuscation, process_injection, sandbox_evasion
+  • amsi_bypass, etw_bypass
 
 Use 'evasion help' for detailed command usage.
     """
