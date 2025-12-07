@@ -1,6 +1,10 @@
 # P2P
 
-Agent: Phantom Hawk.
+## Agent 
+
+- Phantom Hawk.
+
+(P2P AGENT COMMS IS STILL UNDER DEVELOPMENT. DO NOT USE IN REAL RED TEAM ENGAGEMENTS)
 
 ## Key Features
 
