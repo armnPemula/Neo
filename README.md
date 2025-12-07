@@ -10,7 +10,7 @@ _A modular server-client architecture post-exploitation framework built for coll
 - Flask based web application handles all agent's HTTP/S communications
 - Profile-driven Configuration: Malleable profiles for customizing agent behavior and communication patterns
 - Modular Design: Add your own Extensible modules for post-exploitation tasks via Python wrappers
-- Polymorphic Payloads: Generate unique, obfuscated payloads for evasion
+- Polymorphic Payloads: Generate unique, obfuscated payloads with Anti-sandbox detection capability
 - SQLite-based storage for persistent data storage
 
 ### Managers
@@ -21,6 +21,7 @@ _A modular server-client architecture post-exploitation framework built for coll
 - Multiplayer session management: allows multiple operators to work simultaneously
 - Task Orchestrator: Chain modules for complex operations
 - Remote CLI Server: manages remote command-line interface for synchronized agent management and interactive sessions
+- Reporting handler to make post-operation report writing easy 
 
 ### Security Features
 - Payloads are pre-registered with agent ID and embedded encryption key. C2 validates the secret key and enforces encrypted communication using Fernet AES-128-CBC
