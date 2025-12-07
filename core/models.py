@@ -476,7 +476,22 @@ class NeoC2DB:
             self.logger.error(f"Error getting profile by name: {str(e)}")
             return None
 
-   
+
+    def update_profile_by_name(self, name, description, config_str):
+        try:
+            with self.get_cursor() as cursor:
+                cursor.execute('''
+                    UPDATE profiles
+                    SET description = ?, config = ?
+                    WHERE name = ?
+                ''', (description, config_str, name))
+
+            if cursor.rowcount == 0:
+                raise ValueError(f"Profile with name '{name}' not found")
+        except Exception as e:
+            self.logger.error(f"Error updating profile by name: {str(e)}")
+            raise
+
 
     def add_profile(self, name, description, config_str):
         profile_id = str(uuid.uuid4())

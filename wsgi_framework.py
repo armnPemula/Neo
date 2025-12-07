@@ -1,4 +1,5 @@
 import os
+import json
 import sys
 import time
 import logging
@@ -88,6 +89,9 @@ class NeoC2Framework:
 
             logger.info("  Creating/Updating profiles to hybrid format...")
             self._update_profiles_to_hybrid()
+
+            logger.info("  Writing default hybrid profile to JSON...")
+            self._write_default_profile_to_json()
 
             logger.info("  Creating default roles...")
             self._create_default_roles()
@@ -346,7 +350,7 @@ class NeoC2Framework:
             with self.db.get_cursor() as cursor:
                 cursor.execute(
                     "UPDATE profiles SET config = ? WHERE name = ?",
-                    (str(hybrid_config), 'default')
+                    (json.dumps(hybrid_config), 'default')
                 )
 
             logger.info("Default profile updated to hybrid format successfully")
@@ -363,6 +367,35 @@ class NeoC2Framework:
 
         except Exception as e:
             logger.error(f"Error updating profiles to hybrid format: {str(e)}")
+            import traceback
+            traceback.print_exc()
+
+
+    def _write_default_profile_to_json(self):
+        try:
+            logger.info("Writing default profile to profiles/default.json...")
+
+            # Create profiles directory if it doesn't exist
+            os.makedirs('profiles', exist_ok=True)
+
+            default_profile = self.db.get_profile_by_name('default')
+            if not default_profile:
+                logger.warning("No default profile found to write to JSON")
+                return
+
+            profile_data = {
+                "name": default_profile['name'],
+                "description": default_profile['description'],
+                "config": default_profile['config']
+            }
+
+            with open('profiles/default.json', 'w') as f:
+                json.dump(profile_data, f, indent=4)
+
+            logger.info("Default profile successfully written to profiles/default.json")
+
+        except Exception as e:
+            logger.error(f"Error writing default profile to JSON: {str(e)}")
             import traceback
             traceback.print_exc()
 

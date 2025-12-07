@@ -1742,6 +1742,7 @@ class RemoteCLIServer:
   profile add <path_to_json>          - Add a new communication profile from a JSON file
   profile add base64:<encoded_json>   - Add a new communication profile from base64 encoded JSON
   profile list                        - List all communication profiles in the database
+  profile reload <profile_path> <profile_name> - Reload an existing profile with changes from a JSON file
 """, "info"
 
         action = command_parts[1].lower()
@@ -1822,8 +1823,47 @@ class RemoteCLIServer:
             except Exception as e:
                 return f"Error listing profiles: {str(e)}", "error"
 
+        elif action == 'reload':
+            if len(command_parts) < 4:
+                return "USAGE: profile reload <profile_path> <profile_name>", "error"
+
+            profile_path = command_parts[2]
+            profile_name = command_parts[3]
+
+            try:
+                if not os.path.exists(profile_path) or not profile_path.lower().endswith('.json'):
+                    return f"Invalid JSON file path: {profile_path}", "error"
+
+                with open(profile_path, 'r') as f:
+                    profile_data = json.load(f)
+
+                name = profile_data.get('name')
+                if not name:
+                    return "Profile JSON must contain a 'name' field", "error"
+
+                description = profile_data.get('description', '')
+                config = profile_data.get('config', {})
+
+                if not isinstance(config, dict):
+                    return "Profile config must be a dictionary object", "error"
+
+                config_str = json.dumps(config)
+
+                self.db.update_profile_by_name(profile_name, description, config_str)
+
+                return f"Profile '{profile_name}' successfully reloaded from {profile_path}", "success"
+
+            except FileNotFoundError:
+                return f"Profile file not found: {profile_path}", "error"
+            except json.JSONDecodeError as e:
+                return f"Invalid JSON in profile data: {str(e)}", "error"
+            except ValueError as e:
+                return f"Profile error: {str(e)}", "error"
+            except Exception as e:
+                return f"Error reloading profile: {str(e)}", "error"
+
         else:
-            return f"Unknown profile action: {action}. Available actions: add, list", "error"
+            return f"Unknown profile action: {action}. Available actions: add, list, reload", "error"
 
     def handle_payload_command(self, command_parts, session):
 
