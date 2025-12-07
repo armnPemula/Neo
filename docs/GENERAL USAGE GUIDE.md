@@ -146,6 +146,12 @@ List all available profiles in DB
 profile list
 ```
 
+### Reload existing Profiles
+
+- During framework initialization, the default profile is automatically written to profiles/default.json
+- Operators can make any changes to this json config and apply the changes by reloading the profile with changes using `profile reload <profile_path> <profile_name>`
+- The reload command can be used for any custom profile, and the default profile
+
 ## Listener Management
 
 HTTP listeners run as separate processes from the main Flask application, acting as internal redirectors, forwarding traffic from agents to the main web interface. Listeners in NeoC2 are profile-driven: they use predefined communication profiles. 
