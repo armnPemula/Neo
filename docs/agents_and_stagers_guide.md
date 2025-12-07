@@ -61,9 +61,9 @@ Phantom Hawk is a Python variant with limited capability.
 - **Module Execution Capability**: Runs extensible modules from C2
 - **P2P Agent Communication**: Configurable Agent command forwarding to other Agents in same network (Under development)
 - **Sanbox & Debugger Detection**: Self deletes in sandboxed environment
+- **Working hours & Kill dates**: Incorporates a profile configurable kill-dates and working-hours restrictions
 
 ### Limitations
-- No working hours/kill-date support
 - No shellcode injection capability
 - No Process Hollowing capability
 - No redirector support 
