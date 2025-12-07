@@ -14,23 +14,25 @@
 - Python virtual environment (python3-venv)
 - OpenSSL for HTTPS certificates
 
+```bash
+sudo apt-get install golang
+sudo apt-get install python3-venv
+git clone https://github.com/stillbigjosh/Neo.git
+nano .env
+```
+
 ### Environment Variables
-**Using .env file for service (production/service)**
-- Environment variables are read from the `.env` file located at `/opt/neoc2/.env`
-- For service deployments, credentials should be set in `/opt/neoc2/.env`
-**Common Environment Variables:**
+**Using .env file for service installation**
+- Environment variables are read from the `.env` file 
 ```bash
 ...
 IP=<your public ip>
-SECRET_KEY=<your random key>
+SECRET_KEY=<your random key>      # CHANGE from default
 DEFAULT_USERNAME=<your username>  # REQUIRED - no default provided
 DEFAULT_PASSWORD=<your pass>      # REQUIRED - no default provided
 ```
-NOTE: 
+
 - THE CREDENTIALS SET VIA THE ENVIRONMENT VARIABLE IS THE INITIAL/DEFAULT ADMINISTRATOR. 
-- AFTER STARTING THE FRAMEWORK, NAVIGATE TO https://<ip>:7443 (THE USER MANAGEMENT PORTAL) 
-- GIVE THIS REGISTRATION LINK TO OTHER MULTIPLAYERS.
-- REGISTERED OPERATORS CAN BE APPROVED AND ASSIGNED A ROLE VIA THE ADMINISTRATIVE USER MANAGEMENT INTERFACE.
 
 ### Service Installation (Recommended for permanent deployment)
 To run NeoC2 as a background service that starts automatically on boot:
@@ -72,6 +74,10 @@ Default user set via environment variable is Administrator. Other multiplayer op
 ```bash
 neoc2-cli --server <IP>:8444 --username <> --password <>
 ```
+
+- AFTER STARTING THE FRAMEWORK, NAVIGATE TO https://<ip>:7443 (THE USER MANAGEMENT PORTAL) 
+- GIVE ITS REGISTRATION LINK TO OTHER MULTIPLAYERS.
+- REGISTERED OPERATORS CAN BE APPROVED AND ASSIGNED A ROLE VIA THE ADMINISTRATIVE USER MANAGEMENT INTERFACE.
 
 ## Basic workflow
 Building a payload using the listener created from your profile config ensures that your chosen API endpoints are visible to the Endpoint Auto-detection Background service.
