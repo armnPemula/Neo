@@ -9,34 +9,33 @@ COMMANDS:
   run         - Execute modules
   stager      - Generate stagers
   beacon      - Active HTTP/S Agents
-  agent       - Manage agents (list, interact, execute, info, kill)
+  agent       - Manage agents (list, interact, info, kill)
   task        - Pending agent tasks
   addtask     - Add a task to an agent directly
   result      - View task results
   interact    - Interact with a beacon
   interactive - Check if session is in interactive mode
-  download    - Download files from agents
-  upload      - Upload files to agents
   save        - Save specific results to logs directory
   payload_upload - Upload staging payload to C2 endpoint
-  tty_shell   - Start tty shell. Agent specific cmd.
-  evasion     - Evasion techniques
   encryption  - Encryption operations
-  profile     - Communication profile management (list, add)
+  profile     - Communication profile management (list, add, reload)
   payload     - Generate various payload types
-  pinject     - Injects shellcode into notepad.exe & explorer.exe
-  peinject    - Injects PE files by Process Hollowing
-  coff-loader - Load bofs on agent session
   taskchain   - Task Orchestration
   reporting   - Generate reports
   event       - View Event monitor
-
   status      - Show framework status
   history     - Show command history
   clear       - Clear terminal
   back	      - Exit interactive mode
-  exit/quit   - Exit CLI
 
+  tty_shell   - Start tty shell
+  evasion     - AMSI/ETW bypass 
+  pinject     - Injects shellcode into notepad.exe & explorer.exe
+  peinject    - Injects PE files by Process Hollowing
+  upload      - Upload files to agents
+  download    - Download files from agents
+  sleep       - Change agent sleep interval
+  
 NOTES:
   • Parameters in < > are required
   • Parameters in [ ] are optional
