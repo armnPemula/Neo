@@ -264,23 +264,38 @@ class RemoteCLIServer:
                 module_manager.load_all_modules()
 
                 modules_list = module_manager.list_modules()  # Call the method
-                
+
                 if not modules_list:
                     return "No modules found. Place modules in the modules/ directory.", 'info'
-                
+
                 output = "Available Modules:\n"
-                output += "-" * 80 + "\n"
-                
+                output += "-" * 120 + "\n"
+                output += f"{'Name':<25} {'Type':<15} {'Technique ID':<15} {'MITRE Tactics':<25} {'Description':<35}\n"
+                output += "-" * 120 + "\n"
+
                 for module_info in modules_list:
-                    output += f"Name: {module_info.get('name', 'Unknown')}\n"
-                    output += f"Description: {module_info.get('description', 'No description')}\n"
-                    output += f"Type: {module_info.get('type', 'unknown')}\n"
-                    output += f"Technique ID: {module_info.get('technique_id', 'unknown')}\n"
-                    output += f"MITRE Tactics: {', '.join(module_info.get('mitre_tactics', []))}\n"
-                    output += "-" * 80 + "\n"
-                
+                    name = module_info.get('name', 'Unknown')
+                    module_type = module_info.get('type', 'unknown')
+                    technique_id = module_info.get('technique_id', 'unknown')
+                    mitre_tactics = ', '.join(module_info.get('mitre_tactics', []))
+                    description = module_info.get('description', 'No description')
+
+                    # Truncate fields if too long
+                    if len(name) > 24:
+                        name = name[:22] + ".."
+                    if len(module_type) > 14:
+                        module_type = module_type[:12] + ".."
+                    if len(technique_id) > 14:
+                        technique_id = technique_id[:12] + ".."
+                    if len(mitre_tactics) > 24:
+                        mitre_tactics = mitre_tactics[:22] + ".."
+                    if len(description) > 34:
+                        description = description[:32] + ".."
+
+                    output += f"{name:<25} {module_type:<15} {technique_id:<15} {mitre_tactics:<25} {description:<35}\n"
+
                 return output, 'success'
-                
+
             except Exception as e:
                 return f"Error listing modules: {str(e)}", 'error'
         
@@ -728,30 +743,30 @@ class RemoteCLIServer:
                 agent_manager = session.agent_manager
                 if not agent_manager:
                     return "Agent manager not initialized", 'error'
-                
+
                 agents = agent_manager.list_agents()
                 if not agents:
                     return "No active agents found.", 'info'
-                
+
                 output = "Active Agents:\n"
-                output += "=" * 80 + "\n"
-                
+                output += "-" * 150 + "\n"
+                output += f"{'ID':<30} {'IP Address':<15} {'Hostname':<20} {'OS':<15} {'User':<15} {'Listener':<15} {'Status':<12} {'Last Seen':<19}\n"
+                output += "-" * 150 + "\n"
+
                 for agent in agents:
-                    output += f"ID: {agent['id']}\n"
-                    output += f"IP: {agent['ip_address']}\n"
-                    output += f"Hostname: {agent['hostname']}\n"
-                    output += f"OS: {agent['os_info']}\n"
-                    output += f"User: {agent['user']}\n"
-                    output += f"Listener: {agent['listener_id']}\n"
-                    output += f"First Seen: {agent['first_seen']}\n"
-                    output += f"Last Seen: {agent['last_seen']}\n"
-                    output += f"Status: {agent['status']}\n"
-                    output += f"Pending Tasks: {agent['pending_tasks']}\n"
-                    output += f"Interactive Mode: {'Yes' if agent.get('interactive_mode') else 'No'}\n"
-                    output += "=" * 80 + "\n"
-                
+                    agent_id = agent['id']
+                    ip_address = agent['ip_address']
+                    hostname = agent['hostname']
+                    os_info = agent['os_info'][:14] if agent['os_info'] else 'N/A'  # Truncate if too long
+                    user = agent['user']
+                    listener_id = agent['listener_id']
+                    status = agent['status']
+                    last_seen = agent['last_seen'][:19] if agent['last_seen'] else 'N/A'  # Truncate timestamp
+
+                    output += f"{agent_id:<30} {ip_address:<15} {hostname:<20} {os_info:<15} {user:<15} {listener_id:<15} {status:<12} {last_seen:<19}\n"
+
                 return output, 'success'
-                
+
             except Exception as e:
                 return f"Error listing agents: {str(e)}", 'error'
         
@@ -1738,11 +1753,20 @@ class RemoteCLIServer:
 
     def handle_profile_command(self, command_parts, session):
         if len(command_parts) < 2:
-            return """Profile Management Commands:
-  profile add <path_to_json>          - Add a new communication profile from a JSON file
-  profile add base64:<encoded_json>   - Add a new communication profile from base64 encoded JSON
-  profile list                        - List all communication profiles in the database
-  profile reload <profile_path> <profile_name> - Reload an existing profile with changes from a JSON file
+            return """
+PROFILE MANAGEMENT COMMANDS
+═══════════════════════════════════════════════════════════════════
+
+COMMANDS:
+  • profile add <path>                - Add a new communication profile from a JSON file
+  • profile add base64:<encoded_json> - Add a new communication profile from base64 encoded JSON
+  • profile list                      - List all communication profiles in the database
+  • profile reload <path> <name>      - Reload an existing profile with changes from a JSON file
+
+EXAMPLES:
+  • profile add /path/to/profile.json
+  • profile add base64:eyJuYW1lIjoiTXlQcm9maWxlIiwiY29uZmlnIjp7fX0=
+  • profile reload /path/to/updated.json MyProfile
 """, "info"
 
         action = command_parts[1].lower()
@@ -1869,24 +1893,27 @@ class RemoteCLIServer:
 
         if len(command_parts) < 3:
             return """
-Payload Generation Commands
-Usage: payload <type> <listener_name> [options]
+PAYLOAD GENERATION COMMANDS
+═══════════════════════════════════════════════════════════════════
 
-Available Payload Types:
-  phantom_hawk_agent   - Python agent 
-  go_agent             - Go agent compiled to Windows executable
+SYNTAX:
+  • payload <type> <listener_name> [options]
 
-Options:
-  --obfuscate          - Enable payload obfuscation
-  --disable-sandbox    - Disable sandbox/antidebugging checks
-  --output <filename>  - Save payload to file (optional)
-  --linux              - Compile payload to Linux binary
-  --windows            - Compile payload to Windows binary
-  --redirector         - Use redirector host and port from profile instead of C2 URL
+AVAILABLE PAYLOAD TYPES:
+  • phantom_hawk_agent   - Python agent
+  • go_agent             - Go agent compiled to Windows executable
 
-Examples:
-  payload phantom_hawk_agent <listener_id> [--obfuscate] [--disable-sandbox] [--linux] [--redirector]
-  payload go_agent <listener_name> [--disable-sandbox] [--windows] [--redirector]
+OPTIONS:
+  • --obfuscate          - Enable payload obfuscation
+  • --disable-sandbox    - Disable sandbox/antidebugging checks
+  • --output <filename>  - Save payload to file (optional)
+  • --linux              - Compile payload to Linux binary
+  • --windows            - Compile payload to Windows binary
+  • --redirector         - Use redirector host and port from profile instead of C2 URL
+
+EXAMPLES:
+  • payload phantom_hawk_agent <listener_id> [--obfuscate] [--disable-sandbox] [--linux] [--redirector]
+  • payload go_agent <listener_name> [--disable-sandbox] [--windows] [--redirector]
             """, 'info'
 
         payload_type = command_parts[1].lower()
@@ -2179,19 +2206,22 @@ Use 'download' command or access the file directly from the server.
     def handle_payload_upload_command(self, command_parts, session):
         if len(command_parts) < 2:
             return """
-PAYLOAD UPLOAD COMMANDS:
-  payload_upload upload <local_file_path>    - Upload a payload file for stagers
-  payload_upload status                      - Check status of uploaded payload
-  payload_upload clear                       - Clear the currently uploaded payload
+PAYLOAD UPLOAD COMMANDS
+═══════════════════════════════════════════════════════════════════
+
+COMMANDS:
+  • payload_upload upload <file>    - Upload a payload file for stagers
+  • payload_upload status           - Check status of uploaded payload
+  • payload_upload clear            - Clear the currently uploaded payload
 
 DESCRIPTION:
   Upload custom payloads (executables, scripts, etc.) to be used with stagers.
   Supported extensions: .exe, .dll, .py, .js, .vbs, .bat, .ps1, .bin, .dat, .raw
 
 EXAMPLES:
-  payload_upload upload /tmp/myscript.exe
-  payload_upload status
-  payload_upload clear
+  • payload_upload upload /tmp/myscript.exe
+  • payload_upload status
+  • payload_upload clear
             """, 'info'
 
         action = command_parts[1].lower()
@@ -2395,27 +2425,30 @@ UPLOADED PAYLOAD STATUS:
     def handle_taskchain_command(self, command_parts, session):
         if len(command_parts) < 2:
             return """
-TASK CHAIN COMMANDS:
-  taskchain create <agent_id> <module1,module2,module3> [name=chain_name] [execute=true]
-  taskchain list [agent_id=<agent_id>] [status=<status>] [limit=<limit>]
-  taskchain status <chain_id>
-  taskchain execute <chain_id>
-  taskchain help
+TASK CHAIN COMMANDS
+═══════════════════════════════════════════════════════════════════
+
+COMMANDS:
+  • taskchain create <agent_id> <module1,module2,module3> [name=chain_name] [execute=true]
+  • taskchain list [agent_id=<agent_id>] [status=<status>] [limit=<limit>]
+  • taskchain status <chain_id>
+  • taskchain execute <chain_id>
+  • taskchain help
 
 OPTIONS:
-  name=chain_name    - Name for the task chain
-  execute=true       - Execute the chain immediately after creation (default: false)
-  agent_id=agent_id  - Filter chains by agent ID (for list command)
-  status=status      - Filter chains by status (for list command)
-  limit=limit        - Limit number of results (for list command)
+  • name=chain_name    - Name for the task chain
+  • execute=true       - Execute the chain immediately after creation (default: false)
+  • agent_id=agent_id  - Filter chains by agent ID (for list command)
+  • status=status      - Filter chains by status (for list command)
+  • limit=limit        - Limit number of results (for list command)
 
 EXAMPLES:
-  taskchain create AGENT001 get_system,whoami,pslist name=priv_escalation
-  taskchain create AGENT001 recon_enum,net_scan execute=true
-  taskchain list
-  taskchain list agent_id=AGENT001 status=pending
-  taskchain status CHAIN123
-  taskchain execute CHAIN123
+  • taskchain create AGENT001 get_system,whoami,pslist name=priv_escalation
+  • taskchain create AGENT001 recon_enum,net_scan execute=true
+  • taskchain list
+  • taskchain list agent_id=AGENT001 status=pending
+  • taskchain status CHAIN123
+  • taskchain execute CHAIN123
             """, 'info'
 
         action = command_parts[1].lower()
@@ -2582,27 +2615,30 @@ EXAMPLES:
 
             elif action == 'help':
                 return """
-TASK CHAIN COMMANDS:
-  taskchain create <agent_id> <module1,module2,module3> [name=chain_name] [execute=true]
-  taskchain list [agent_id=<agent_id>] [status=<status>] [limit=<limit>]
-  taskchain status <chain_id>
-  taskchain execute <chain_id>
-  taskchain help
+TASK CHAIN COMMANDS
+═══════════════════════════════════════════════════════════════════
+
+COMMANDS:
+  • taskchain create <agent_id> <module1,module2,module3> [name=chain_name] [execute=true]
+  • taskchain list [agent_id=<agent_id>] [status=<status>] [limit=<limit>]
+  • taskchain status <chain_id>
+  • taskchain execute <chain_id>
+  • taskchain help
 
 OPTIONS:
-  name=chain_name    - Name for the task chain
-  execute=true       - Execute the chain immediately after creation (default: false)
-  agent_id=agent_id  - Filter chains by agent ID (for list command)
-  status=status      - Filter chains by status (for list command)
-  limit=limit        - Limit number of results (for list command)
+  • name=chain_name    - Name for the task chain
+  • execute=true       - Execute the chain immediately after creation (default: false)
+  • agent_id=agent_id  - Filter chains by agent ID (for list command)
+  • status=status      - Filter chains by status (for list command)
+  • limit=limit        - Limit number of results (for list command)
 
 EXAMPLES:
-  taskchain create AGENT001 get_system,whoami,pslist name=priv_escalation
-  taskchain create AGENT001 recon_enum,net_scan execute=true
-  taskchain list
-  taskchain list agent_id=AGENT001 status=pending
-  taskchain status CHAIN123
-  taskchain execute CHAIN123
+  • taskchain create AGENT001 get_system,whoami,pslist name=priv_escalation
+  • taskchain create AGENT001 recon_enum,net_scan execute=true
+  • taskchain list
+  • taskchain list agent_id=AGENT001 status=pending
+  • taskchain status CHAIN123
+  • taskchain execute CHAIN123
                 """, 'info'
 
             else:
@@ -2637,29 +2673,32 @@ EXAMPLES:
         """
         if len(command_parts) < 2:
             return """
-REPORTING COMMANDS:
-  reporting list
-  reporting <report_type> [start_date=YYYY-MM-DD] [end_date=YYYY-MM-DD] [agent_id=AGENT_ID] [user_id=USER_ID]
-  reporting export <report_type> <format> [start_date=YYYY-MM-DD] [end_date=YYYY-MM-DD] [agent_id=AGENT_ID] [user_id=USER_ID]
-  reporting help
+REPORTING COMMANDS
+═══════════════════════════════════════════════════════════════════
+
+COMMANDS:
+  • reporting list
+  • reporting <report_type> [start_date=YYYY-MM-DD] [end_date=YYYY-MM-DD] [agent_id=AGENT_ID] [user_id=USER_ID]
+  • reporting export <report_type> <format> [start_date=YYYY-MM-DD] [end_date=YYYY-MM-DD] [agent_id=AGENT_ID] [user_id=USER_ID]
+  • reporting help
 
 REPORT TYPES:
-  agent_activity    - Agent activity and communication report
-  task_execution    - Task execution and results report
-  audit_log         - Security audit log with user actions  
-  module_usage      - Module usage and execution patterns
-  system_overview   - System health and configuration report
+  • agent_activity    - Agent activity and communication report
+  • task_execution    - Task execution and results report
+  • audit_log         - Security audit log with user actions
+  • module_usage      - Module usage and execution patterns
+  • system_overview   - System health and configuration report
 
 EXPORT FORMATS:
-  csv, json
+  • csv, json
 
 EXAMPLES:
-  reporting list
-  reporting agent_activity
-  reporting task_execution start_date=2024-01-01 end_date=2024-12-31
-  reporting audit_log agent_id=AGENT001
-  reporting export module_usage csv
-  reporting export task_execution json start_date=2024-01-01
+  • reporting list
+  • reporting agent_activity
+  • reporting task_execution start_date=2024-01-01 end_date=2024-12-31
+  • reporting audit_log agent_id=AGENT001
+  • reporting export module_usage csv
+  • reporting export task_execution json start_date=2024-01-01
             """, 'info'
 
         action = command_parts[1].lower()
@@ -3837,11 +3876,25 @@ DB Inactive:       {stats['db_inactive_agents']}
                                 logs = self.audit_logger.get_logs(limit=limit, offset=offset)
                                 if logs:
                                     output = f"Audit Events (limit: {limit}):\n"
-                                    output += "-" * 100 + "\n"
+                                    output += "-" * 150 + "\n"
+                                    output += f"{'Timestamp':<25} {'Username':<20} {'Action':<20} {'Resource':<30} {'Details':<40}\n"
+                                    output += "-" * 150 + "\n"
                                     for log in logs:
-                                        output += f"[{log['timestamp']}] {log['username']} | {log['action']} | {log['resource_type']}/{log['resource_id']}\n"
-                                        output += f"  Details: {log['details']}\n"
-                                        output += "-" * 100 + "\n"
+                                        timestamp = log['timestamp'][:19] if log['timestamp'] else 'N/A'
+                                        username = log['username']
+                                        action = log['action']
+                                        resource = f"{log['resource_type']}/{log['resource_id']}"
+                                        details = log['details'][:39] if log['details'] else 'N/A'
+
+                                        # Truncate fields if too long
+                                        if len(username) > 19:
+                                            username = username[:17] + ".."
+                                        if len(action) > 19:
+                                            action = action[:17] + ".."
+                                        if len(resource) > 29:
+                                            resource = resource[:27] + ".."
+
+                                        output += f"{timestamp:<25} {username:<20} {action:<20} {resource:<30} {details:<40}\n"
                                     return output, 'success'
                                 else:
                                     return "No audit events found", 'info'
@@ -4936,11 +4989,25 @@ DB Inactive:       {stats['db_inactive_agents']}
                             logs = self.audit_logger.get_logs(limit=limit, offset=offset)
                             if logs:
                                 output = f"Audit Events (limit: {limit}):\n"
-                                output += "-" * 100 + "\n"
+                                output += "-" * 150 + "\n"
+                                output += f"{'Timestamp':<25} {'Username':<20} {'Action':<20} {'Resource':<30} {'Details':<40}\n"
+                                output += "-" * 150 + "\n"
                                 for log in logs:
-                                    output += f"[{log['timestamp']}] {log['username']} | {log['action']} | {log['resource_type']}/{log['resource_id']}\n"
-                                    output += f"  Details: {log['details']}\n"
-                                    output += "-" * 100 + "\n"
+                                    timestamp = log['timestamp'][:19] if log['timestamp'] else 'N/A'
+                                    username = log['username']
+                                    action = log['action']
+                                    resource = f"{log['resource_type']}/{log['resource_id']}"
+                                    details = log['details'][:39] if log['details'] else 'N/A'
+
+                                    # Truncate fields if too long
+                                    if len(username) > 19:
+                                        username = username[:17] + ".."
+                                    if len(action) > 19:
+                                        action = action[:17] + ".."
+                                    if len(resource) > 29:
+                                        resource = resource[:27] + ".."
+
+                                    output += f"{timestamp:<25} {username:<20} {action:<20} {resource:<30} {details:<40}\n"
                                 result, status = output, 'success'
                             else:
                                 result, status = "No audit events found", 'info'
