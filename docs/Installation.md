@@ -51,6 +51,7 @@ To run NeoC2 as a background service that starts automatically on boot:
    ```
 
 ### Service Management
+These two global commands: `neoc2` and `neoc2-cli` were made globally accessible after setup. The former for managing the Neo C2 Server running in background as a service, and the latter for remote-ing as a multiplayer client. 
 ```bash
 # Global command
 neoc2
@@ -66,8 +67,8 @@ neoc2 logs
 
 ### Default Ports
 - Default HTTP/HTTPS Listener: 443
-- User management: 7443
-- Remote CLI: 8444
+- The Flask Web Application and Administrative User Management components of the framework runs on Port 7443 
+- The TeamServer's Remote CLI Manager is exposed on Port 8444
 
 ### Start CLI 
 Default user set via environment variable is Administrator. Other multiplayer operators can login via register via the web and have an Administrator approve and assign a role.
