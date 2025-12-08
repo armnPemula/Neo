@@ -78,7 +78,7 @@ Profiles define communication characteristics for agents:
 }
 ```
 
-### Kill Date Configuration
+#### Kill Date Configuration
 
 - **Field**: `kill_date`
 - **Format**: ISO 8601 format in UTC timezone (`YYYY-MM-DDTHH:MM:SSZ`)
@@ -86,7 +86,7 @@ Profiles define communication characteristics for agents:
 - **Default**: If not specified, defaults to `"2025-12-31T23:59:59Z"`
 - **Behavior**: When the agent's system time exceeds this date/time, the agent will self-delete
 
-### Working Hours Configuration
+#### Working Hours Configuration
 
 - **Field**: `working_hours`
 - **Structure**:
@@ -111,7 +111,7 @@ Profiles define communication characteristics for agents:
 4. Days are numbered from 1-7 (Monday=1, Sunday=7), with Sunday represented as both 0 (Go's default) and 7 (in configuration).
 5. Hours are specified in 24-hour format (0-23).
 
-### Redirector
+#### Redirector
 
 1. Add redirector settings to your C2 profile under the redirector key:
 ```json
