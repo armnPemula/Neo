@@ -6,7 +6,6 @@ import uuid
 from datetime import datetime
 
 def get_info():
-    """Get module information"""
     return {
         "name": "persistence",
         "description": "Establish persistence on Windows, Linux, or macOS systems",
@@ -40,7 +39,6 @@ def get_info():
     }
 
 def execute(options, session):
-    """Execute the module with given options and session"""
     agent_id = options.get("agent_id")
     method = options.get("method")
     payload_path = options.get("payload_path")
@@ -118,7 +116,6 @@ def execute(options, session):
         }
 
 def _generate_registry_persistence(payload_path, name):
-    """Generate Windows Registry persistence (Run key)"""
     return f'''
 # Windows Registry Persistence
 $payloadPath = "{payload_path}"
@@ -153,7 +150,6 @@ try {{
 '''
 
 def _generate_startup_persistence(payload_path, name):
-    """Generate Windows Startup folder persistence"""
     return f'''
 # Windows Startup Folder Persistence
 $payloadPath = "{payload_path}"
@@ -187,7 +183,6 @@ try {{
 '''
 
 def _generate_cron_persistence(payload_path, name, interval):
-    """Generate Linux/macOS cron persistence"""
     return f'''
 # Cron Persistence (Linux/macOS)
 payload_path="{payload_path}"
@@ -227,7 +222,6 @@ fi
 '''
 
 def _generate_launchd_persistence(payload_path, name):
-    """Generate macOS LaunchAgent/LaunchDaemon persistence"""
     return f'''
 # LaunchAgent Persistence (macOS)
 payload_path="{payload_path}"
@@ -295,7 +289,6 @@ fi
 '''
 
 def _generate_systemd_persistence(payload_path, name, interval):
-    """Generate Linux systemd service + timer persistence"""
     return f'''
 # Systemd Service Persistence (Linux)
 payload_path="{payload_path}"
@@ -367,7 +360,6 @@ fi
 '''
 
 def _generate_service_persistence(payload_path, name):
-    """Generate Windows Service persistence"""
     return f'''
 # Windows Service Persistence
 $payloadPath = "{payload_path}"

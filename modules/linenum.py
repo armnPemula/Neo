@@ -5,7 +5,6 @@ import base64
 
 
 def get_info():
-    """Get module information"""
     return {
         "name": "linenum",
         "description": "Execute LinEnum.sh script for comprehensive Linux system enumeration and reconnaissance",
@@ -50,7 +49,6 @@ def get_info():
 
 
 def execute(options, session):
-    """Execute the linenum module with given options and session"""
     agent_id = options.get("agent_id")
     keyword = options.get("keyword", "")
     report_name = options.get("report_name", "")

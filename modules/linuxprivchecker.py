@@ -5,7 +5,6 @@ import base64
 
 
 def get_info():
-    """Get module information"""
     return {
         "name": "linuxprivchecker",
         "description": "Execute linuxprivchecker.py script for comprehensive Linux privilege escalation reconnaissance",
@@ -30,7 +29,6 @@ def get_info():
 
 
 def execute(options, session):
-    """Execute the linuxprivchecker module with given options and session"""
     agent_id = options.get("agent_id")
     output_file = options.get("output_file", "privcheckout.txt")
     

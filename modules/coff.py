@@ -3,7 +3,6 @@ import base64
 from pathlib import Path
 
 def get_info():
-    """Get module information"""
     return {
         "name": "coff",
         "description": "Load and execute Beacon Object Files (BOFs) in-memory using the embedded COFF loader on agents",
@@ -35,7 +34,6 @@ def get_info():
 
 
 def execute(options, session):
-    """Execute the BOF in-memory on the agent"""
     agent_id = options.get("agent_id")
     bof_path = options.get("bof_path")
     arguments = options.get("arguments", "")
@@ -146,9 +144,6 @@ def execute(options, session):
 
 
 def _handle_coff_command(command_parts, session):
-    """
-    Handle the coff command for both CLI and TUI
-    """
     try:
         if len(command_parts) < 3:
             return "Usage: coff <agent_id> <bof_path> [arguments]", 'error'
