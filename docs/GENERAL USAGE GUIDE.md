@@ -16,6 +16,7 @@
 - [Persistence](#persistence)
 - [Event Monitoring](#event-monitoring)
 - [Security Features](#security-features)
+- [Autocompletion](#autocompletion)
 - [Troubleshooting](#troubleshooting)
 
 
@@ -634,6 +635,10 @@ NeoC2 implements role-based access control:
 ### Encrypted Comms
 
 Robust encrypted communication between agents and the C2 server using Fernet's AES-128-CBC, ensuring that only legitimate agents can register and communicate with the server, while all task and result data is encrypted in transit.
+
+## Autocompletion
+
+Each framework and operations command has a autocompletion menu. Use the Tab Key to trigger suggestions, complete words, saving time and reducing errors by predicting what you're trying to enter. 
 
 ## Troubleshooting
 
