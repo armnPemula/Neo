@@ -3,18 +3,6 @@
 
 _A modular server-client architecture post-exploitation framework built for collaborative agent management in red team operations and security testing. Enables flexibility by allowing operators to add their own modules._
 
-
-<p align="center">
-<pre>
-███╗   ██╗███████╗ ██████╗  ██████╗██████╗
-████╗  ██║██╔════╝██╔═══██╗██╔════╝╚════██╗
-██╔██╗ ██║█████╗  ██║   ██║██║      █████╔╝
-██║╚██╗██║██╔══╝  ██║   ██║██║     ██╔═══╝
-██║ ╚████║███████╗╚██████╔╝╚██████╗███████╗
-╚═╝  ╚═══╝╚══════╝ ╚═════╝  ╚═════╝╚══════╝
-                                            </pre>
-</p>
-
 ### Architecture
 - Flask based web application handles all agent's HTTP/S communications
 - Profile-driven Configuration: Malleable profiles for customizing agent behavior and communication patterns
