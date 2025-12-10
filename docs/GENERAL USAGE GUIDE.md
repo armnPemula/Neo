@@ -74,9 +74,16 @@ Profiles define communication characteristics for agents:
     "redirector": {
       "redirector_host": "0.0.0.0",
       "redirector_port": 80
-    }
+    },
+    "failover_urls": [
+      "https://failover1.example.com:443",
+      "https://failover2.example.com:443",
+      "https://backup1.example.com:8443",
+      "https://backup2.example.com:8443"
+    ]
   }
 }
+
 ```
 
 #### Kill Date Configuration
@@ -128,6 +135,26 @@ Use the --redirector flag when generating payloads
 - Without `--redirector`: Agent connects directly to C2 server
 - With `--redirector`: Agent connects to the redirector host/port specified in the profile instead of the C2 server
 - All other agent behavior remains the same
+
+#### Failover deployment
+
+1. Add backup failover Neo C2 Servers to profile config
+```json
+"failover_urls": [
+      "https://failover1.example.com:443",
+      "https://failover2.example.com:443",
+      "https://backup1.example.com:8443",
+      "https://backup2.example.com:8443"
+    ]
+```
+
+2. How it works:
+CLI Support: `--use-failover` flag correctly during payload generation
+- Agents maintain connection to primary C2 with failure counting
+- Upon reaching failure threshold `15`, agents attempt to connect to failover servers in sequence
+- Success with any failover server becomes new current C2
+- Automatic reset and failback mechanisms
+Without `--use-failover` flag, Agents are generated without embedded failover servers
 
 ### Load Profile to DB
 
