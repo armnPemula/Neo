@@ -28,7 +28,7 @@ The Go Agent is a second stage exe compiled, multi-functional agent with feature
 - **Shellcode Injection**: Shellcode injection into notepad.exe or explorer.exe with pinject
 - **Process Hollowing**: PE files injection into svchost.exe with peinject
 - **Redirector Support**: Allows operators to define and manage external infrastructure that points to the internal listeners
-- **Failover deployment**: Embeds failover logic 
+- **Failover deployment**: Embeds failover C2 servers 
 
 ### Limitations
 - Larger payload size due to comprehensive feature set
@@ -63,7 +63,7 @@ Phantom Hawk is a Python variant with limited capability.
 - **Sanbox & Debugger Detection**: Self deletes in sandboxed environment
 - **Working hours & Kill dates**: Incorporates a profile configurable kill-dates and working-hours restrictions
 - **Redirector Support**: Allows operators to define and manage external infrastructure that points to the internal listeners
-- **Failover deployment**: Embeds failover logic 
+- **Failover deployment**: Embeds failover C2 servers
 
 ### Limitations
 - No shellcode injection capability
