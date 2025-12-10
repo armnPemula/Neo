@@ -32,8 +32,8 @@ OPERATIONS:
   coff-loader - Execute bofs on agent session
   download    - Download files from agents/C2 server
   evasion     - AMSI/ETW bypass
-  pinject     - Injects shellcode into notepad.exe & explorer.exe
-  peinject    - Injects PE files by Process Hollowing
+  pinject     - Injects shellcode into notepad.exe or explorer.exe
+  peinject    - Injects PE files by Process Hollowing into svchost.exe 
   sleep       - Change agent sleep interval
   tty_shell   - Start tty shell
   upload      - Upload files to agents
