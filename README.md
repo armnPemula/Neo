@@ -12,11 +12,7 @@ _A modular server-client architecture post-exploitation framework built for coll
 ██║╚██╗██║██╔══╝  ██║   ██║██║     ██╔═══╝
 ██║ ╚████║███████╗╚██████╔╝╚██████╗███████╗
 ╚═╝  ╚═══╝╚══════╝ ╚═════╝  ╚═════╝╚══════╝
-                                            </pre><br/>
-Neo Remote Command & Control Framework<br/>
-Connected to: 127.0.0.1:8444<br/>
-User: administrator<br/>
-Type 'help' for available commands<br/>
+                                            </pre>
 </p>
 
 ### Architecture
