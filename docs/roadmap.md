@@ -6,7 +6,8 @@
 2. Configurable killdate/workingtime
 3. In-memory shellcode Injection
 4. C2 Redirector support
-5. In-memory execution of Windows PE file 
+5. In-memory execution of Windows PE file
+6. Failover server deployment support
 
 ## Actively Under development
 1. Enhanced and Opsec safe P2P Agent comm
