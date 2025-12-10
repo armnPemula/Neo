@@ -27,15 +27,15 @@ The Go Agent is a second stage exe compiled, multi-functional agent with feature
 - **Working hours & Kill dates**: The Go-agent incorporates a profile configurable kill-dates and working-hours restrictions
 - **Shellcode Injection**: Shellcode injection into notepad.exe or explorer.exe with pinject
 - **Process Hollowing**: PE files injection into svchost.exe with peinject
-- **Redirector Support**: Allows operators to define and manage external infrastructure that points to the internal listeners.
-
+- **Redirector Support**: Allows operators to define and manage external infrastructure that points to the internal listeners
+- **Failover deployment**: Embeds failover logic 
 
 ### Limitations
 - Larger payload size due to comprehensive feature set
 
 ### Usage
 ```
-NeoC2 > payload go_agent <listener_name> [--disable-sandbox] [--windows] [--redirector]
+NeoC2 > payload go_agent <listener_name> [--disable-sandbox] [--windows] [--redirector] [--use-failover]
 NeoC2 [INTERACTIVE:abc123] > [upload, download, tty_shell, pinject, peinject, sleep, kill, interact, run]
 ```
 
@@ -62,7 +62,8 @@ Phantom Hawk is a Python variant with limited capability.
 - **P2P Agent Communication**: Configurable Agent command forwarding to other Agents in same network (Under development)
 - **Sanbox & Debugger Detection**: Self deletes in sandboxed environment
 - **Working hours & Kill dates**: Incorporates a profile configurable kill-dates and working-hours restrictions
-- **Redirector Support**: Allows operators to define and manage external infrastructure that points to the internal listeners.
+- **Redirector Support**: Allows operators to define and manage external infrastructure that points to the internal listeners
+- **Failover deployment**: Embeds failover logic 
 
 ### Limitations
 - No shellcode injection capability
@@ -70,7 +71,7 @@ Phantom Hawk is a Python variant with limited capability.
 
 ### Usage
 ```
-NeoC2 > payload phantom_hawk <listener_id> [--obfuscate] [--disable-sandbox] [--linux] [--redirector]
+NeoC2 > payload phantom_hawk <listener_id> [--obfuscate] [--disable-sandbox] [--linux] [--redirector] [--use-failover]
 NeoC2 [INTERACTIVE:abc123] > [upload, download, tty_shell, sleep, kill, interact, run]
 ```
 
