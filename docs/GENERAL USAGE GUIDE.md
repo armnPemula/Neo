@@ -537,7 +537,7 @@ run pinject <shellcode> [agent_id=<agent_id>] # METHOD - 2 (Non-interactive mode
 - If notepad.exe is not running on the target system, the agent will fallback on explorer.exe
 - The shellcode must be in raw binary format (use `-f raw`)
 
-#### Process Injection Flow
+#### Shellcode Injection Flow
 1. Find target process PID
 2. Open process with appropriate permissions
 3. Allocate memory in target process
@@ -555,7 +555,7 @@ run pinject <shellcode> [agent_id=<agent_id>] # METHOD - 2 (Non-interactive mode
 
 ### PEInject
 
-Inject a PE file using Process Hollowing
+Inject an unmanaged PE using Process Hollowing
 
 #### Compatibility
 - Go_agent 
@@ -574,11 +574,20 @@ peinject pe_file=<payload_path> # METHOD - 1 (Interactive mode)
 run peinject pe_file=<payload_path> [agent_id=<agent_id>] # METHOD - 2 (Non-interactive mode)
 ```
 
+# PE Injection Flow
+1. Parses and validates the DOS header and NT headers to ensure the file is a valid PE
+2. Creates a Windows process (svchost.exe or explorer.exe) in suspended state 
+3. Unmap the target process memory using the undocumented NtUnmapViewOfSection API
+4. Allocates executable memory in the target process with proper permission
+5. Writes the entire PE file contents to the allocated memory in the target process using WriteProcessMemory
+6. Retrieves the suspended thread context and updates the instruction pointer to point to the new PE's entry point
+7. Sets the modified thread context back to the suspended thread
+8. Resumes the target process thread using ResumeThread, which begins execution of the injected PE
+
 #### Supported Payloads
 - windows/x64/exec
 - windows/x64/shell_reverse_tcp
 - windows/x64/meterpreter/reverse_tcp
-- windows/x64/exec
 
 ## Persistence
 
