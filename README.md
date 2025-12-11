@@ -21,12 +21,11 @@ _A modular server-client architecture post-exploitation framework built for coll
 - Reporting handler to make post-operation report writing easy 
 
 ### Security Features
-- HTTPS is the primary C2 channel. Listeners exposes REST-style endpoint. All TCP + TLS is handled by the web/listener stack
+- HTTPS is the primary C2 channel. Listeners exposes configurable REST-style endpoints. All TCP + TLS is handled by the web/listener stack
 - Payloads are pre-registered with agent ID and embedded unique encryption key. The framework validates the secret key and enforces encrypted communication using its own Fernet layer over HTTPS.
 - All tasking and results JSON bodies are Fernet-encrypted per agent
 - Multiple authentication layers (sessions, tokens, roles)
 - Input validation and command injection prevention
-- Configurable HTTP/S endpoint URLs to evade detection
 - Role-Based Access Control
 
 ### Multiplayer Features
