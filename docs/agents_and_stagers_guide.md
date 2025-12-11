@@ -85,8 +85,8 @@ NeoC2 [INTERACTIVE:abc123] > [upload, download, tty_shell, sleep, kill, interact
 
 #### Bash Dropper
 - **Linux compatibility**
-- **Downloads agent** from `/api/assets/main.js` endpoint and deryptes using embedded secret key
-- **Self-executes** the downloaded agent 
+- **Downloads agent** from `/api/assets/main.js` endpoint and XOR derypts using embedded secret key
+- **Executes** the downloaded agent 
 - **Self-deletes** after execution
 - **Binary payload support**: Can only execute linux binary files after temporary storage
 ### Usage
@@ -96,8 +96,8 @@ stager generate linux_binary host=<c2_host> port=<c2_port> [protocol=https] [dow
 
 #### Powershell Dropper
 - **Windows compatibility**
-- **Downloads agent** from `/api/assets/main.js` endpoint and deryptes using embedded secret key
-- **Self-executes** the downloaded agent 
+- **Downloads agent** from `/api/assets/main.js` endpoint and XOR derypts using embedded secret key
+- **Executes** the downloaded agent 
 - **Self-deletes** after execution
 - **Binary payload support**: Can only execute windows .exe binary files
 ### Usage
