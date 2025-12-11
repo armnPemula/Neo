@@ -12,7 +12,8 @@
 - [Evasion Techniques](#evasion-techniques)
 - [File Operations](#file-operations)
 - [Task Chaining](#task-chaining-web-ui-only)
-- [Process Injections](#process-injections)
+- [PInject](#pinject)
+- [PEInject](#peinject)
 - [Persistence](#persistence)
 - [Event Monitoring](#event-monitoring)
 - [Security Features](#security-features)
@@ -507,9 +508,7 @@ NeoC2 provides advanced task chaining capabilities, allowing operators to create
    - Service installation
    - File system persistence
 
-## Process Injections
-
-### PInject
+## PInject
 
 In-memory shellcode injection 
 
@@ -553,7 +552,7 @@ run pinject <shellcode> [agent_id=<agent_id>] # METHOD - 2 (Non-interactive mode
 - Any custom raw shellcode
 
 
-### PEInject
+## PEInject
 
 Inject an unmanaged PE using Process Hollowing
 
@@ -574,7 +573,7 @@ peinject pe_file=<payload_path> # METHOD - 1 (Interactive mode)
 run peinject pe_file=<payload_path> [agent_id=<agent_id>] # METHOD - 2 (Non-interactive mode)
 ```
 
-# PE Injection Flow
+#### PE Injection Flow
 1. Parses and validates the DOS header and NT headers to ensure the file is a valid PE
 2. Creates a Windows process (svchost.exe or explorer.exe) in suspended state 
 3. Unmap the target process memory using the undocumented NtUnmapViewOfSection API
