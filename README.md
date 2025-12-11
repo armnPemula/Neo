@@ -36,6 +36,8 @@ _A modular server-client architecture post-exploitation framework built for coll
 ### Miscellaneous
 - In-memory PE file inejction and execution
 - Shellcode injection
+- C2 Redirector support
+- Multi-server failover deloyment support
 
 ## Installation:
 NeoC2 works well on Kali Linux. See the [Installations](https://neoc2.readthedocs.io/en/latest/Installation/) docs for instructions. 
