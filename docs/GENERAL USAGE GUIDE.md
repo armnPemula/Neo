@@ -384,9 +384,6 @@ NeoC2 implements multiple evasion techniques to bypass endpoint security:
 
 1. AMSI Bypass: Anti-Malware Scan Interface bypass
 2. ETW Bypass: Event Tracing for Windows disablement
-3. Sleep Obfuscation: Process hollowing and indirect syscalls
-4. String Encryption: Runtime decryption of sensitive strings
-5. Process Injection: Reflective loading into legitimate processes
 
 ### Evasion Commands
 Ensure C2 is in interactive mode before running evasion modules
