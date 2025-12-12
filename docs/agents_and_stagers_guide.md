@@ -79,7 +79,8 @@ NeoC2 [INTERACTIVE:abc123] > [upload, download, tty_shell, sleep, kill, interact
 ## Droppers
 
 ### Description
-**IMPORTANT: These are DROPPERS only** - they download an agent from `/api/assets/main.js`, execute it, and then delete themselves. They do NOT contain interactive capabilities or command execution features. These are designed purely for initial access and agent deployment.
+**IMPORTANT: These are DROPPERS only** - they download an agent from the default payload staging API `/api/assets/main.js`, XOR decrypts, execute the implant, and then delete themselves. They do NOT contain interactive capabilities or command execution features. These are designed purely for initial access and agent deployment. 
+For seamless operation, use the `payload_upload` feature to stage payloads first, the stager will do the rest. 
 
 ### Supported Types
 
