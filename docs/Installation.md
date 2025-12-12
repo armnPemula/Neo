@@ -34,22 +34,26 @@ DEFAULT_PASSWORD=<your pass>      # REQUIRED - no default provided
 
 - THE CREDENTIALS SET VIA THE ENVIRONMENT VARIABLE IS THE INITIAL/DEFAULT ADMINISTRATOR. 
 
-#### Service Installation (Recommended for permanent deployment)
+#### Service Installation 
+
 To run NeoC2 as a background service that starts automatically on boot:
-- **Install prerequisites and setup**
+
+1. **Install prerequisites and setup**
    ```
    ./install.sh
    ```
-- **Configure your environment variables** in `.env` file
-- **Install and start the service**
+2. **Configure your environment variables** in `.env` file
+
+3. **Install and start the service**
    ```
    sudo ./setup_service.sh
    ```
-- **Verify service installation**
+4. **Verify service installation**
    ```
    neoc2 status
    ```
-- Post-installation, ensure you change the secret_key and internal_api_token values in `/opt/neoc2/config.json`
+   
+5. Post-installation, ensure you change the secret_key and internal_api_token values in `/opt/neoc2/config.json`
 
 #### Service Management
 These two global commands: `neoc2` and `neoc2-cli` were made globally available after setup. The former for managing the Neo C2 Server running in background as a service, and the latter for remote-ing as a multiplayer client. 
