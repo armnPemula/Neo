@@ -702,7 +702,7 @@ Each framework and operations command has a autocompletion menu. Use the Tab Key
 ### Debugging Endpoints
 
 ```
-curl ip:443/health
+curl ip:7443/health
 ```
 
 ### Useful CLI Commands for Troubleshooting
