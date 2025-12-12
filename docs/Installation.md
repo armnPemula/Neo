@@ -36,21 +36,20 @@ DEFAULT_PASSWORD=<your pass>      # REQUIRED - no default provided
 
 #### Service Installation (Recommended for permanent deployment)
 To run NeoC2 as a background service that starts automatically on boot:
-1. **Install prerequisites and setup**
+- **Install prerequisites and setup**
    ```
    ./install.sh
    ```
-2. **Configure your environment variables** in `.env` file 
-3. **Install and start the service**
+- **Configure your environment variables** in `.env` file
+- **Install and start the service**
    ```
    sudo ./setup_service.sh
    ```
-4. **Verify service installation**
+- **Verify service installation**
    ```
    neoc2 status
    ```
-5. Post-installation, ensure you change the secret_key and internal_api_token values in `/opt/neoc2/config.json`
-
+- Post-installation, ensure you change the secret_key and internal_api_token values in `/opt/neoc2/config.json`
 
 #### Service Management
 These two global commands: `neoc2` and `neoc2-cli` were made globally available after setup. The former for managing the Neo C2 Server running in background as a service, and the latter for remote-ing as a multiplayer client. 
@@ -85,7 +84,7 @@ neoc2-cli --server <IP>:8444 --username <> --password <>
 ## Basic workflow
 Building a payload using the listener created from your profile config ensures that your chosen API endpoints are visible to the Endpoint Auto-detection Background service.
 
-1. Using default listener and profile (In real engagement, use custom profile)
+- Using default listener and profile (In real engagement, use custom profile)
 ```
 # Make any required change to the default profile in profiles/default.json
 NeoC2 > profile reload profiles/default.json # OPTIONAL 
@@ -99,7 +98,7 @@ NeoC2 > agent list
 NeoC2 > interact <agent-id>
 ```
 
-2. Using custom profile and own listener
+- Using custom profile and own listener
 ```
 # Add communication profile 
 # Sample communication profile in profiles/sample.json
