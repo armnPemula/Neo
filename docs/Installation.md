@@ -38,22 +38,25 @@ DEFAULT_PASSWORD=<your pass>      # REQUIRED - no default provided
 
 To run NeoC2 as a background service that starts automatically on boot:
 
-1. **Install prerequisites and setup**
+1. **Configure your environment variables** in `.env` file
+
+2. **Install prerequisites and setup**: This will install all dependencies in a python virtual environment. Generates an OpenSSL self-signed certificate.
    ```
    ./install.sh
    ```
-2. **Configure your environment variables** in `.env` file
 
-3. **Install and start the service**
+3. **Install and start the service**: The installation path of the framework after running this will be `/opt/neoc2/` and would also creates two globally available commands for interacting with the C2 Server service instance `neoc2` and a launcher for the C2 Remote Client `neoc2-cli`
    ```
    sudo ./setup_service.sh
    ```
+
 4. **Verify service installation**
    ```
    neoc2 status
    ```
    
-5. Post-installation, ensure you change the secret_key and internal_api_token values in `/opt/neoc2/config.json`
+5. Post-installation, ensure you change the secret_key and internal_api_token values in `/opt/neoc2/config.json` from the default and run `neoc2 restart`. The secret_key is used by Flask as a secret key for signing sessions and other security-related functions. It's required for Flask's session management and CSRF protection mechanisms. The internal_api_token adds a layer of protection against external access to sensitive profile configurations needed by the internal services.
+
 
 #### Service Management
 These two global commands: `neoc2` and `neoc2-cli` were made globally available after setup. The former for managing the Neo C2 Server running in background as a service, and the latter for remote-ing as a multiplayer client. 
