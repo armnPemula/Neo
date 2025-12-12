@@ -64,9 +64,7 @@ By downloading this software you are accepting the terms of use and the licensin
 - [@TrustedSec](https://github.com/trustedsec/COFFLoader) For their awesome COFFLoader and BOF collections 
 - [@PowerShellMafia](https://github.com/PowerShellMafia/PowerSploit) For their repository of powershell modules to practice the extendibility of the C2
 
-
-## Support
-
+### Support
 - **Bug Reports**: [Open an Issue](https://github.com/stillbigjosh/Neo/issues)
 - **Feature Requests**: [Discussions](https://github.com/stillbigjosh/Neo/discussions)
 - **Security Issues**: Contact @stillbigjosh privately 
