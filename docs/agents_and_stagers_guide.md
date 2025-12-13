@@ -28,14 +28,15 @@ The Go Agent is a second stage exe compiled, multi-functional agent with feature
 - **Shellcode Injection**: Shellcode injection into notepad.exe or explorer.exe with pinject
 - **Process Hollowing**: PE files injection into svchost.exe with peinject
 - **Redirector Support**: Allows operators to define and manage external infrastructure that points to the internal listeners
-- **Failover deployment**: Embeds failover C2 servers 
+- **Failover deployment**: Embeds failover C2 servers
+- **String Obfuscation**: Obfuscates DLL imports and Windows API functions to evade static analysis and signature-based detection, which typically inspect the Import Address Table (IAT). At runtime, a XOR deobfuscation routine is used to reconstruct the correct names.
 
 ### Limitations
 - Larger payload size due to comprehensive feature set
 
 ### Usage
 ```
-NeoC2 > payload go_agent <listener_name> [--disable-sandbox] [--windows] [--redirector] [--use-failover]
+NeoC2 > payload go_agent <listener_name> [--disable-sandbox] [--windows] [--redirector] [--use-failover] [--obfuscate]
 NeoC2 [INTERACTIVE:abc123] > [upload, download, tty_shell, pinject, peinject, sleep, kill, interact, run]
 ```
 
