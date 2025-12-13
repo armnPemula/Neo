@@ -23,5 +23,10 @@
 - [ ] File browser
 - [ ] Support for domain fronting
 - [ ] In-memory .NET execution
+- [ ] Enhanced lateral movement techniques
+- [ ] URI endpoint rotation in malleable profiles
+- [ ] Runtime obfuscation
+- [ ] Stealth communication channels
 
-
+## Premium
+Some fatures are intended to be developed as a premium feature. More details on this later on.
