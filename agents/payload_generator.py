@@ -805,9 +805,14 @@ class PayloadGenerator:
                     env['GOOS'] = 'windows'
                 env['GOARCH'] = 'amd64'
 
+                # For Windows builds, use GUI application flag to prevent console window allocation
+                ldflags = ['-s', '-w']
+                if platform.lower() != 'linux':
+                    ldflags.extend(['-H', 'windowsgui'])  # Create GUI application without console window
+
                 result = subprocess.run([
                     'go', 'build',
-                    '-ldflags', '-s -w',
+                    '-ldflags', ' '.join(ldflags),
                     '-o', output_filename,
                     '.'
                 ], env=env, capture_output=True, text=True, cwd=temp_dir)
