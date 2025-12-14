@@ -507,7 +507,7 @@ NeoC2 provides advanced task chaining capabilities, allowing operators to create
 
 ## PInject
 
-In-memory shellcode injection 
+In-memory shellcode injection into a remote process
 
 #### Compatibility
 - Go_agent 
@@ -551,7 +551,7 @@ run pinject <shellcode> [agent_id=<agent_id>] # METHOD - 2 (Non-interactive mode
 
 ## PEInject
 
-Inject an unmanaged PE using Process Hollowing
+Inject an unmanaged PE(Portable Executable) using Process Hollowing into a remote process
 
 #### Compatibility
 - Go_agent 
