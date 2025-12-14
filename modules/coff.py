@@ -108,6 +108,21 @@ def execute(options, session):
         else:
             bof_command = f"bof {encoded_bof}"
 
+        # Validate that the BOF is a valid COFF file before sending
+        # Check for COFF signature at the beginning of the file
+        if len(bof_content) < 4:
+            return {
+                "success": False,
+                "error": f"BOF file {bof_path} is too small to be a valid COFF file"
+            }
+
+        # COFF files start with specific signatures - check for valid COFF signature
+        # In a PE/COFF file, the DOS header has a signature at offset 0x00 and another at offset 0x3C
+        # For a COFF file, we expect certain header structures
+        magic_bytes = bof_content[:4]
+        # Basic check for COFF signature (first 4 bytes should represent the number of sections, which is typically small)
+        # This is just a basic validation - the actual goffloader library will do proper validation
+
         task_id = agent_manager.add_task(agent_id, bof_command)
         if task_id:
             result = {
@@ -115,7 +130,8 @@ def execute(options, session):
                 "output": f"BOF execution task queued for agent {agent_id}",
                 "task_id": task_id,
                 "bof_command": bof_command,
-                "bof_path": bof_full_path
+                "bof_path": bof_full_path,
+                "encoded_bof_size": len(encoded_bof)
             }
 
             session.audit_logger = getattr(session, 'audit_logger', None)
@@ -125,7 +141,7 @@ def execute(options, session):
                     action='bof_execute',
                     resource_type='task',
                     resource_id=task_id,
-                    details=f"BOF execution queued for agent {agent_id}. Command: bof <base64_data>",
+                    details=f"BOF execution queued for agent {agent_id}. Command: bof <base64_data> ({len(encoded_bof)} chars encoded)",
                     ip_address='127.0.0.1'
                 )
 

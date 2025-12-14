@@ -788,7 +788,22 @@ class PayloadGenerator:
             ], capture_output=True, text=True, cwd=temp_dir, env=go_env)
 
             if result.returncode != 0:
-                raise Exception(f"Failed to get Go dependencies: {result.stderr}")
+                raise Exception(f"Failed to get fernet-go dependency: {result.stderr}")
+
+            # Get goffloader dependencies for BOF execution
+            result = subprocess.run([
+                'go', 'get', 'github.com/praetorian-inc/goffloader/src/coff'
+            ], capture_output=True, text=True, cwd=temp_dir, env=go_env)
+
+            if result.returncode != 0:
+                raise Exception(f"Failed to get goffloader coff dependency: {result.stderr}")
+
+            result = subprocess.run([
+                'go', 'get', 'github.com/praetorian-inc/goffloader/src/lighthouse'
+            ], capture_output=True, text=True, cwd=temp_dir, env=go_env)
+
+            if result.returncode != 0:
+                raise Exception(f"Failed to get goffloader lighthouse dependency: {result.stderr}")
 
             if platform.lower() == 'linux':
                 output_filename = 'agent'

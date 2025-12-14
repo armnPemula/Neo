@@ -29,7 +29,7 @@ FRAMEWORK:
   back	      - Exit interactive mode
   
 OPERATIONS:
-  coff-loader - Execute bofs on agent session
+  inline-execute - Execute bofs on agent session
   download    - Download files from agents/C2 server
   evasion     - AMSI/ETW bypass
   pinject     - Injects shellcode into notepad.exe or explorer.exe

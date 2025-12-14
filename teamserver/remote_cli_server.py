@@ -617,6 +617,122 @@ class RemoteCLIServer:
         except Exception as e:
             return f"Error running pinject: {str(e)}", 'error'
 
+    def handle_inline_execute_command(self, command_parts, session):  # Changed function name from handle_coff_loader_command to handle_inline_execute_command
+        module_name = "coff"
+
+        if len(command_parts) < 2:
+            return "USAGE: inline-execute <bof_path> [arguments] [agent_id=<agent_id>]", 'error'
+
+        try:
+            db = session.agent_manager.db if session.agent_manager else self.db
+            module_manager = self.module_manager
+
+            options = {}
+
+            # Parse command arguments - handle both positional and key-value format
+            if '=' in command_parts[1] and 'agent_id=' in command_parts[1]:
+                # Handle format like: inline-execute agent_id=abc-123-def bof_path
+                for part in command_parts[1:]:
+                    if '=' in part:
+                        key, value = part.split('=', 1)
+                        options[key] = value
+            else:
+                # Handle format: inline-execute bof_path [arguments] [agent_id=value]
+                bof_path = command_parts[1]
+                options['bof_path'] = bof_path
+
+                # Look for agent_id in remaining arguments
+                arguments = []
+                i = 2
+                while i < len(command_parts):
+                    part = command_parts[i]
+                    if '=' in part and part.startswith('agent_id='):
+                        key, value = part.split('=', 1)
+                        options['agent_id'] = value
+                    else:
+                        arguments.append(part)
+                    i += 1
+
+                if arguments:
+                    options['arguments'] = ' '.join(arguments)
+
+            # If in interactive mode and no agent_id specified, use the current agent
+            if session.interactive_mode and session.current_agent and 'agent_id' not in options:
+                options['agent_id'] = session.current_agent
+
+            # Validate that we have an agent_id
+            if 'agent_id' not in options:
+                return "No agent_id specified and not in interactive mode", 'error'
+
+            agent_id = options['agent_id']
+            if session.agent_manager.is_agent_locked_interactively(agent_id):
+                lock_info = session.agent_manager.get_interactive_lock_info(agent_id)
+                if lock_info and lock_info['operator'] != session.username:
+                    return f"Agent {agent_id} is currently in exclusive interactive mode with operator: {lock_info['operator']}. Access denied.", 'error'
+
+            module_manager.load_all_modules()
+            module_manager.load_modules_from_db()
+
+            loaded_modules_dict = getattr(module_manager, 'loaded_modules', {})
+
+            if module_name not in loaded_modules_dict:
+                import importlib.util
+                module_path = os.path.join("modules", f"{module_name}.py")
+                if os.path.exists(module_path):
+                    spec = importlib.util.spec_from_file_location(module_name, module_path)
+                    module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(module)
+
+                    if hasattr(module, 'get_info'):
+                        module_info = module.get_info()
+                    else:
+                        module_info = {}
+
+                    loaded_modules_dict[module_name] = {
+                        'module': module,
+                        'info': module_info,
+                        'path': module_path
+                    }
+                else:
+                    return f"Module not found: {module_name}", 'error'
+
+            if module_name in loaded_modules_dict:
+                module_data = loaded_modules_dict[module_name]
+                module = module_data['module']
+                info = module_data.get('info', {})
+
+                if hasattr(module, 'execute'):
+                    required_options = [opt for opt, opt_info in info.get('options', {}).items() if opt_info.get('required', False)]
+                    missing = [opt for opt in required_options if opt not in options]
+                    if missing:
+                        return f"Missing required options: {', '.join(missing)}", 'error'
+
+                    original_agent = session.current_agent
+                    try:
+                        result = module.execute(options, session)
+                        if 'success' in result:
+                            status = 'success' if result['success'] else 'error'
+                            output = result.get('output', result.get('error', 'Unknown error'))
+
+                            # Return both the output and task ID if available (like pinject)
+                            if 'task_id' in result:
+                                return f"{output} (Task ID: {result['task_id']})", status
+                            else:
+                                return output, status
+                        else:
+                            output = result.get('output', 'No output')
+                            status = result.get('status', 'unknown')
+                            return output, status
+                    finally:
+                        session.current_agent = original_agent
+                else:
+                    return f"Module '{module_name}' does not have an execute function", 'error'
+            else:
+                return f"Could not load module: {module_name}", 'error'
+
+        except Exception as e:
+            return f"Error running inline-execute: {str(e)}", 'error'
+
     def handle_peinject_command(self, command_parts, session):
         module_name = "peinject"
 
@@ -2377,57 +2493,6 @@ UPLOADED PAYLOAD STATUS:
             self.logger.warning("Could not validate file type with python-magic, continuing with upload")
             pass
 
-    def handle_inline_execute_command(self, command_parts, session):
-
-        if len(command_parts) < 3:
-            return "Usage: coff-loader <agent_id> <bof_path> [arguments]", 'error'
-        
-        agent_id = command_parts[1]
-        
-        if session.agent_manager.is_agent_locked_interactively(agent_id):
-            lock_info = session.agent_manager.get_interactive_lock_info(agent_id)
-            if lock_info and lock_info['operator'] != session.username:
-                return f"Agent {agent_id} is currently in exclusive interactive mode with operator: {lock_info['operator']}. Access denied.", 'error'
-        
-        bof_path = command_parts[2]
-        
-        agent = session.agent_manager.get_agent(agent_id)
-        if not agent:
-            return f"Agent {agent_id} not found", 'error'
-        
-        arguments = []
-        if len(command_parts) > 3:
-            arguments = command_parts[3:]
-        
-        options = {
-            'agent_id': agent_id,
-            'bof_path': bof_path,
-            'arguments': ' '.join(arguments) if arguments else ''
-        }
-        
-        if not session.module_manager:
-            return "Module manager not initialized", 'error'
-        
-        loaded_modules_dict = getattr(session.module_manager, 'loaded_modules', {})
-        
-        coff_module = None
-        if 'coff' in loaded_modules_dict:
-            coff_module = loaded_modules_dict['coff']['module']
-        else:
-            module_path = os.path.join('modules', 'coff.py')
-            load_success = session.module_manager.load_module(module_path)
-            if load_success or 'coff' in loaded_modules_dict:
-                if 'coff' in loaded_modules_dict:
-                    coff_module = loaded_modules_dict['coff']['module']
-        
-        if coff_module and hasattr(coff_module, 'execute'):
-            result = coff_module.execute(options, session)
-            if 'success' in result and result['success']:
-                return result.get('output', 'BOF execution task queued successfully'), 'success'
-            else:
-                return result.get('error', 'Unknown error occurred during BOF execution'), 'error'
-        else:
-            return "Could not load COFF module from modules/coff.py", 'error'
 
     def handle_taskchain_command(self, command_parts, session):
         if len(command_parts) < 2:
@@ -3841,7 +3906,7 @@ DB Inactive:       {stats['db_inactive_agents']}
                     return 'Clear command only works in local CLI', 'info'
                 elif base_command == 'payload':
                     return self.handle_payload_command(command_parts, session)
-                elif base_command == 'coff-loader':
+                elif base_command == 'inline-execute':
                     return self.handle_inline_execute_command(command_parts, session)
                 elif base_command == 'interact':
                     # Handle the interact command (alias for agent interact)
@@ -3971,7 +4036,7 @@ DB Inactive:       {stats['db_inactive_agents']}
             return self.handle_upload_command(command_parts, session)
         elif base_command == 'payload':
             return self.handle_payload_command(command_parts, session)
-        elif base_command == 'coff-loader':
+        elif base_command == 'inline-execute':
             return self.handle_inline_execute_command(command_parts, session)
         elif base_command == 'interact':
             if len(command_parts) < 2:
@@ -4275,7 +4340,7 @@ DB Inactive:       {stats['db_inactive_agents']}
     def _is_framework_command(self, base_cmd):
         framework_commands = {
             'agent', 'listener', 'modules', 'run', 'pinject', 'peinject', 'evasion', 'encryption',
-            'download', 'upload', 'stager', 'profile', 'payload', 'coff-loader',
+            'download', 'upload', 'stager', 'profile', 'payload', 'inline-execute',
             'interact', 'event', 'task', 'result', 'addtask', 'back', 'exit',
             'quit', 'clear', 'help', 'status', 'save', 'protocol', 'interactive',
             'taskchain', 'beacon'
@@ -4329,7 +4394,7 @@ DB Inactive:       {stats['db_inactive_agents']}
                 'stager': 'modules.list',
                 'evasion': 'agents.interact',
                 'taskchain': 'modules.execute',
-                'coff-loader': 'modules.execute',  # coff-loader command requires modules.execute permission
+                'inline-execute': 'modules.execute',  # inline-execute command requires modules.execute permission
                 'help': 'agents.list',  # Help command should be available to all roles with basic access
             }
             
@@ -4657,7 +4722,7 @@ DB Inactive:       {stats['db_inactive_agents']}
                         result, status = self.handle_payload_command(command_parts, remote_session)
                     elif base_cmd == 'payload_upload':
                         result, status = self.handle_payload_upload_command(command_parts, remote_session)
-                    elif base_cmd == 'coff-loader':
+                    elif base_cmd == 'inline-execute':
                         result, status = self.handle_inline_execute_command(command_parts, remote_session)
                     elif base_cmd == 'interact':
                         if len(command_parts) < 2:
@@ -4949,7 +5014,7 @@ DB Inactive:       {stats['db_inactive_agents']}
                 result, status = self.handle_payload_command(command_parts, remote_session)
             elif base_cmd == 'payload_upload':
                 result, status = self.handle_payload_upload_command(command_parts, remote_session)
-            elif base_cmd == 'coff-loader':
+            elif base_cmd == 'inline-execute':
                 result, status = self.handle_inline_execute_command(command_parts, remote_session)
             elif base_cmd == 'interact':
                 # Handle the interact command (alias for agent interact)
