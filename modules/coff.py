@@ -116,12 +116,7 @@ def execute(options, session):
                 "error": f"BOF file {bof_path} is too small to be a valid COFF file"
             }
 
-        # COFF files start with specific signatures - check for valid COFF signature
-        # In a PE/COFF file, the DOS header has a signature at offset 0x00 and another at offset 0x3C
-        # For a COFF file, we expect certain header structures
         magic_bytes = bof_content[:4]
-        # Basic check for COFF signature (first 4 bytes should represent the number of sections, which is typically small)
-        # This is just a basic validation - the actual goffloader library will do proper validation
 
         task_id = agent_manager.add_task(agent_id, bof_command)
         if task_id:

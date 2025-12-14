@@ -1411,10 +1411,7 @@ func (a *{AGENT_STRUCT_NAME}) {AGENT_HANDLE_BOF_FUNC}(command string) string {
 	// Parse and prepare BOF arguments using lighthouse module
 	var args []string
 	if bofArgs != "" {
-		// Parse arguments - for now support simple space-separated arguments
-		// In the future, we can support more complex argument parsing
 		argParts := strings.Fields(bofArgs)
-		// For goffloader, arguments need to be prefixed with type specifiers
 		// Common types: 'z' for null-terminated strings, 'i' for integers, etc.
 		for _, argPart := range argParts {
 			args = append(args, "z"+argPart) // Default to null-terminated string
